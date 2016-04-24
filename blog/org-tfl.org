@@ -86,126 +86,370 @@ https://api.tfl.gov.uk/Journey/JourneyResults/Bank/to/Westminster
 
 This will try to retrieve a journey from Bank to Westminster.
 The problem is that TfL knows way more than one Bank or Westminster station.
-It will return a response with something like a 301 status code and a disambiguation result:
+It will return a response with something like a 300 status code and a disambiguation result:
 For each location type (to, from, via) there is a list with possible candidates.
 The user has to select one of each and then you send a new request with the more precise
 information.
 
 #+BEGIN_EXAMPLE json
 {
-    "$type": "Tfl.Api.Presentation.Entities.JourneyPlanner.DisambiguationResult, Tfl.Api.Presentation.Entities",
-    "toLocationDisambiguation": {
-        "$type": "Tfl.Api.Presentation.Entities.JourneyPlanner.Disambiguation, Tfl.Api.Presentation.Entities",
-        "disambiguationOptions": [
-            {
-                "$type": "Tfl.Api.Presentation.Entities.JourneyPlanner.DisambiguationOption, Tfl.Api.Presentation.Entities",
-                "parameterValue": "1000266",
-                "uri": "\/journey\/journeyresults\/bank\/to\/1000266",
-                "place": {
-                    "$type": "Tfl.Api.Presentation.Entities.StopPoint, Tfl.Api.Presentation.Entities",
-                    "naptanId": "HUBWSM",
-                    "modes": [
-                        "tube"
-                    ],
-                    "icsCode": "1000266",
-                    "stopType": "stop",
-                    "url": "https:\/\/api-neon.tfl.gov.uk\/StopPoint\/HUBWSM",
-                    "commonName": "Westminster (London), Westminster",
-                    "placeType": "StopPoint",
-                    "additionalProperties": [],
-                    "lat": 51.50139978595,
-                    "lon": -0.12490128591
-                },
-                "matchQuality": 1000
-            },
-            {
-                "$type": "Tfl.Api.Presentation.Entities.JourneyPlanner.DisambiguationOption, Tfl.Api.Presentation.Entities",
-                "parameterValue": "1002085",
-                "uri": "\/journey\/journeyresults\/bank\/to\/1002085",
-                "place": {
-                    "$type": "Tfl.Api.Presentation.Entities.StopPoint, Tfl.Api.Presentation.Entities",
-                    "naptanId": "930GWMR",
-                    "modes": [
-                        "river-bus"
-                    ],
-                    "icsCode": "1002085",
-                    "stopType": "stop",
-                    "url": "https:\/\/api-neon.tfl.gov.uk\/StopPoint\/930GWMR",
-                    "commonName": "Westminster (London), Westminster Pier",
-                    "placeType": "StopPoint",
-                    "additionalProperties": [],
-                    "lat": 51.50181087832,
-                    "lon": -0.12361646769000001
-                },
-                "matchQuality": 967
-                }
-        ],
-        "matchStatus": "list"
-    },
-    "fromLocationDisambiguation": {
-        "$type": "Tfl.Api.Presentation.Entities.JourneyPlanner.Disambiguation, Tfl.Api.Presentation.Entities",
-        "disambiguationOptions": [
-            {
-                "$type": "Tfl.Api.Presentation.Entities.JourneyPlanner.DisambiguationOption, Tfl.Api.Presentation.Entities",
-                "parameterValue": "1000013",
-                "uri": "\/journey\/journeyresults\/1000013\/to\/westminster",
-                "place": {
-                    "$type": "Tfl.Api.Presentation.Entities.StopPoint, Tfl.Api.Presentation.Entities",
-                    "naptanId": "HUBBAN",
-                    "modes": [
-                        "dlr",
-                        "tube"
-                    ],
-                    "icsCode": "1000013",
-                    "stopType": "stop",
-                    "url": "https:\/\/api-neon.tfl.gov.uk\/StopPoint\/HUBBAN",
-                    "commonName": "City of London, Bank",
-                    "placeType": "StopPoint",
-                    "additionalProperties": [],
-                    "lat": 51.513389043480004,
-                    "lon": -0.08882541444
-                },
-                "matchQuality": 1000
-            },
-            {
-                "$type": "Tfl.Api.Presentation.Entities.JourneyPlanner.DisambiguationOption, Tfl.Api.Presentation.Entities",
-                "parameterValue": "51.66151925957,-0.09419500928",
-                "uri": "\/journey\/journeyresults\/51.66151925957,-0.09419500928\/to\/westminster",
-                "place": {
-                    "$type": "Tfl.Api.Presentation.Entities.Place, Tfl.Api.Presentation.Entities",
-                    "url": "https:\/\/api-neon.tfl.gov.uk\/Place\/",
-                    "commonName": "Bankside, Enfield (London)",
-                    "placeType": "StopPoint",
-                    "additionalProperties": [],
-                    "lat": 51.66151925957,
-                    "lon": -0.09419500927999999
-                },
-                "matchQuality": 964
-            }
-       ],
-        "matchStatus": "list"
-    },
-    "viaLocationDisambiguation": {
-        "$type": "Tfl.Api.Presentation.Entities.JourneyPlanner.Disambiguation, Tfl.Api.Presentation.Entities",
-        "matchStatus": "empty"
-    },
-    "recommendedMaxAgeMinutes": 1440,
-    "searchCriteria": {
-        "$type": "Tfl.Api.Presentation.Entities.JourneyPlanner.SearchCriteria, Tfl.Api.Presentation.Entities",
-        "dateTime": "2016-04-24T11:32:00",
-        "dateTimeType": "Departing"
-    },
-    "journeyVector": {
-        "$type": "Tfl.Api.Presentation.Entities.JourneyPlanner.JourneyVector, Tfl.Api.Presentation.Entities",
-        "from": "Bank",
-        "to": "Westminster",
-        "via": "",
-        "uri": "\/journey\/journeyresults\/bank\/to\/westminster"
-    }
+  "$type": "Tfl.Api.Presentation.Entities.JourneyPlanner.DisambiguationResult, Tfl.Api.Presentation.Entities",
+  "toLocationDisambiguation": {
+    "$type": "Tfl.Api.Presentation.Entities.JourneyPlanner.Disambiguation, Tfl.Api.Presentation.Entities",
+    "disambiguationOptions": [
+      {
+        "$type": "Tfl.Api.Presentation.Entities.JourneyPlanner.DisambiguationOption, Tfl.Api.Presentation.Entities",
+        "parameterValue": "1000266",
+        "uri": "\/journey\/journeyresults\/bank\/to\/1000266",
+        "place": {
+          "$type": "Tfl.Api.Presentation.Entities.StopPoint, Tfl.Api.Presentation.Entities",
+          "naptanId": "HUBWSM",
+          "modes": [
+            "tube"
+          ],
+          "icsCode": "1000266",
+          "stopType": "stop",
+          "url": "https:\/\/api-neon.tfl.gov.uk\/StopPoint\/HUBWSM",
+          "commonName": "Westminster (London), Westminster",
+          "placeType": "StopPoint",
+          "additionalProperties": [],
+          "lat": 51.50139978595,
+          "lon": -0.12490128591
+        },
+        "matchQuality": 1000
+      },
+      {
+        "$type": "Tfl.Api.Presentation.Entities.JourneyPlanner.DisambiguationOption, Tfl.Api.Presentation.Entities",
+        "parameterValue": "1002085",
+        "uri": "\/journey\/journeyresults\/bank\/to\/1002085",
+        "place": {
+          "$type": "Tfl.Api.Presentation.Entities.StopPoint, Tfl.Api.Presentation.Entities",
+          "naptanId": "930GWMR",
+          "modes": [
+            "river-bus"
+          ],
+          "icsCode": "1002085",
+          "stopType": "stop",
+          "url": "https:\/\/api-neon.tfl.gov.uk\/StopPoint\/930GWMR",
+          "commonName": "Westminster (London), Westminster Pier",
+          "placeType": "StopPoint",
+          "additionalProperties": [],
+          "lat": 51.50181087832,
+          "lon": -0.12361646769000001
+        },
+        "matchQuality": 967
+        }
+    ],
+    "matchStatus": "list"
+  },
+  "fromLocationDisambiguation": {
+    "$type": "Tfl.Api.Presentation.Entities.JourneyPlanner.Disambiguation, Tfl.Api.Presentation.Entities",
+    "disambiguationOptions": [
+      {
+        "$type": "Tfl.Api.Presentation.Entities.JourneyPlanner.DisambiguationOption, Tfl.Api.Presentation.Entities",
+        "parameterValue": "1000013",
+        "uri": "\/journey\/journeyresults\/1000013\/to\/westminster",
+        "place": {
+          "$type": "Tfl.Api.Presentation.Entities.StopPoint, Tfl.Api.Presentation.Entities",
+          "naptanId": "HUBBAN",
+          "modes": [
+            "dlr",
+            "tube"
+          ],
+          "icsCode": "1000013",
+          "stopType": "stop",
+          "url": "https:\/\/api-neon.tfl.gov.uk\/StopPoint\/HUBBAN",
+          "commonName": "City of London, Bank",
+          "placeType": "StopPoint",
+          "additionalProperties": [],
+          "lat": 51.513389043480004,
+          "lon": -0.08882541444
+        },
+        "matchQuality": 1000
+      },
+      {
+        "$type": "Tfl.Api.Presentation.Entities.JourneyPlanner.DisambiguationOption, Tfl.Api.Presentation.Entities",
+        "parameterValue": "51.66151925957,-0.09419500928",
+        "uri": "\/journey\/journeyresults\/51.66151925957,-0.09419500928\/to\/westminster",
+        "place": {
+          "$type": "Tfl.Api.Presentation.Entities.Place, Tfl.Api.Presentation.Entities",
+          "url": "https:\/\/api-neon.tfl.gov.uk\/Place\/",
+          "commonName": "Bankside, Enfield (London)",
+          "placeType": "StopPoint",
+          "additionalProperties": [],
+          "lat": 51.66151925957,
+          "lon": -0.09419500927999999
+        },
+        "matchQuality": 964
+      }
+     ],
+    "matchStatus": "list"
+  },
+  "viaLocationDisambiguation": {
+    "$type": "Tfl.Api.Presentation.Entities.JourneyPlanner.Disambiguation, Tfl.Api.Presentation.Entities",
+    "matchStatus": "empty"
+  },
+  "recommendedMaxAgeMinutes": 1440,
+  "searchCriteria": {
+    "$type": "Tfl.Api.Presentation.Entities.JourneyPlanner.SearchCriteria, Tfl.Api.Presentation.Entities",
+    "dateTime": "2016-04-24T11:32:00",
+    "dateTimeType": "Departing"
+  },
+  "journeyVector": {
+    "$type": "Tfl.Api.Presentation.Entities.JourneyPlanner.JourneyVector, Tfl.Api.Presentation.Entities",
+    "from": "Bank",
+    "to": "Westminster",
+    "via": "",
+    "uri": "\/journey\/journeyresults\/bank\/to\/westminster"
+  }
 }
 #+END_EXAMPLE
 
 The issue is, that for stops you would need to send the =icsCode= and for others the latitude and longitude data.
 I discovered that you can always take the latitude and longitude data for an unambiguous result.
-The only issue is, that the journey will always include a 10m - 50m walk at the beginning and end.
+The only issue is that the journey will always include a 10m - 50m walk at the beginning and end.
 
+I noticed that sometimes emacs wouldn't call my callback after the response was received.
+It just got stuck waiting for more from the server.
+After activating the =url-http-debug= mode, I noticed that this happens with 300s status codes.
+=url-retrieve= will get stuck in "Spinning waiting for headers", which never
+completes so the callback is never called.
+The =url-http-parse-headers= function doesn't handle the 300 status code, well.
+So I had to override the function to simply set =success= to =t= for said status code.
+Curiously at first it still worked randomly without that fix.
+
+Now once you request your journey with unique locations you get a proper result back:
+
+#+BEGIN_EXAMPLE json
+{
+  "$type": "Tfl.Api.Presentation.Entities.JourneyPlanner.ItineraryResult, Tfl.Api.Presentation.Entities",
+  "journeys": [
+    {
+      "$type": "Tfl.Api.Presentation.Entities.JourneyPlanner.Journey, Tfl.Api.Presentation.Entities",
+      "startDateTime": "2016-04-24T12:57:00",
+      "duration": 13,
+      "arrivalDateTime": "2016-04-24T13:10:00",
+      "legs": [...]
+    },
+    {
+      "$type": "Tfl.Api.Presentation.Entities.JourneyPlanner.Journey, Tfl.Api.Presentation.Entities",
+      "startDateTime": "2016-04-24T12:58:00",
+      "duration": 13,
+      "arrivalDateTime": "2016-04-24T13:11:00",
+      "legs": [...]
+    },
+    {
+      "$type": "Tfl.Api.Presentation.Entities.JourneyPlanner.Journey, Tfl.Api.Presentation.Entities",
+      "startDateTime": "2016-04-24T13:02:00",
+      "duration": 12,
+      "arrivalDateTime": "2016-04-24T13:14:00",
+      "legs": [...]
+    }
+  ],
+  "lines": [...],
+  "recommendedMaxAgeMinutes": 4,
+  "searchCriteria": {...},
+  "journeyVector": {...}
+}
+#+END_EXAMPLE
+
+The intersting parts are the journeys and especially their =legs= list.
+Also =lines= can is usefull to get information about disruption (later more about that).
+
+So with this list of journeys we already know when to leave and when we arrive.
+But we don't know how to get there.
+That's where =legs= become important. They provide very indepth information.
+
+#+BEGIN_EXAMPLE json
+"legs": [
+        {
+          "$type": "Tfl.Api.Presentation.Entities.JourneyPlanner.Leg, Tfl.Api.Presentation.Entities",
+          "duration": 5,
+          "instruction": {
+            "$type": "Tfl.Api.Presentation.Entities.Instruction, Tfl.Api.Presentation.Entities",
+            "summary": "Jubilee line to London Bridge",
+            "detailed": "Jubilee line towards Stratford, or North Greenwich",
+            "steps": []
+          },
+          "obstacles": [...],
+          "departureTime": "2016-04-24T12:57:00",
+          "arrivalTime": "2016-04-24T13:02:00",
+          "departurePoint": {...},
+          "arrivalPoint": {...},
+          "path": {...},
+          "routeOptions": [...],
+          "mode": {...},
+          "disruptions": [...],
+          "plannedWorks": [],
+          "isDisrupted": true,
+          "hasFixedLocations": true
+        },
+        ...
+      ]
+#+END_EXAMPLE
+
+So here we actually get not only instructions generated for us, but also
+a list of obstacles (e.g. elevator is out of order), the path with exact geo locations,
+disruptions and planned work information and more.
+
+It's only a matter of parsing the information and presenting it to the user.
+
+* Org Mode
+
+** Links
+=org-mode= has a great feature for links. Depending on the protocol (e.g. http or file) in the url
+=org-mode= uses a different handler function and you can extend those with your own link types.
+I added a handler for =org-tfl:= links.
+
+#+BEGIN_EXAMPLE emacs-lisp
+(org-add-link-type "org-tfl" 'org-tfl-jp-open-org-link)
+#+END_EXAMPLE
+
+The handler function simplified looks like this:
+
+#+BEGIN_EXAMPLE emacs-lisp
+(defun org-tfl-jp-open-org-link (&optional path)
+  "Open a org-tfl link.  PATH is ignored.  Properties of the paragraph are used instead."
+  (let* ((element (org-element-at-point))
+	 (FROM (org-element-property :FROM element))
+	 (TO (org-element-property :TO element))
+	 (VIA (org-element-property :VIA element))
+	 (SCHEDULED (org-get-scheduled-time (point))))
+    (when SCHEDULED
+      (setq DATE (format-time-string "%Y%m%d" SCHEDULED))
+      (setq TIME (format-time-string "%H%M" SCHEDULED)))
+    (org-tfl-jp-retrieve-org
+     FROM TO :via VIA :date DATE :time TIME)))
+#+END_EXAMPLE
+
+This assumes that the link is part of a heading and the paragraph has some special properties.
+I have a nother function which writes these links and properties automatically.
+
+#+BEGIN_EXAMPLE org
+\*\* [[org-tfl:][Retrieving Information...]]
+  SCHEDULED: <2016-04-24 So 13:59>
+  :PROPERTIES:
+  :FROM:     Picadilly Circus
+  :TO:       Liverpool Street
+  :TIMEIS:   Departing
+  :END:
+#+END_EXAMPLE
+
+Once all the results are retrieved, I come back to the opened link, and replace the
+link description, paragraph and properties with the parsed result.
+
+[[file:itinerary_result.png][Itinerary Result]]
+Click on the link to view a screenshot.
+
+The link can be opened again to update the result.
+
+** Icons
+
+All icons are svg which are inserted via text properties.
+I collected loads of those svg icons and had to modify them by hand.
+Most of the time it's a simple resize.
+Emacs can edit svgs in plain text. They are like xml.
+
+#+BEGIN_EXAMPLE nxml
+<?xml version="1.0" encoding="iso-8859-1"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="18" height="20" viewBox="0 0 640 520">
+  <title>London DLR</title>
+  <g stroke="#009999" fill="none">
+    <circle cx="320" cy="260" r="215" stroke-width="90"/>
+  </g>
+  <g stroke="#0019a8" fill="none">
+    <path d="M 0,260 H 640" stroke-width="100" />
+  </g>
+</svg>
+#+END_EXAMPLE
+
+To resize an image, it's best to add the =viewBox= attribute with the original size.
+Then you can easily adjust =height= and =width= to your liking without having to worry about
+positioning or aspect ratio.
+
+The downside is, that the images and icons don't scale at the moment.
+So it only works for one font and font size.
+
+Now when you have the path to an svg or png image file, all you need to insert it in a buffer is:
+#+BEGIN_EXAMPLE emacs-lisp
+(insert
+ (propertize "  " 'display
+  (create-image
+   (with-temp-buffer (insert-file-contents "path/to/image.svg") (buffer-string))
+   'svg t :ascent 80 :mask 'heuristic)))
+#+END_EXAMPLE
+The string can be an alternate string for when you don't display images. But it should have roughly the same
+width as the image for best results.
+The =ascent= of 80 was perfect for my font size.
+The =mask= value =heuristic= is needed to make transparency work.
+
+** Underground Line Color
+
+TfL has a very well thought out corporate style guide. Every color is well defined for each
+use-case.
+You can read the full specification [[http://content.tfl.gov.uk/tfl-colour-standard.pdf][here]].
+I wanted to make the tube line names highlighted with their respective color.
+This can be done by adding =font-lock= keywords.
+
+First you need a faces with the right colors and a mapping to their names.
+Then you add it to the keywords:
+#+BEGIN_EXAMPLE emacs-lisp
+...
+
+(defface org-tfl-waterloo-face
+  '((t (:foreground "white" :background "#66CCCC")))
+  "Waterloo and City Line Face"
+  :group 'org-tfl)
+
+(defvar org-tfl-line-faces
+  '(("Bakerloo line" 0 'org-tfl-bakerloo-face prepend)
+    ("Central line" 0 'org-tfl-central-face prepend)
+    ("Circle line" 0 'org-tfl-circle-face prepend)
+    ("District line" 0 'org-tfl-district-face prepend)
+    ("Hammersmith & City line" 0 'org-tfl-hammersmith-face prepend)
+    ("Jubilee line" 0 'org-tfl-jubliee-face prepend)
+    ("Metropolitan line" 0 'org-tfl-metropolitan-face prepend)
+    ("Northern line" 0 'org-tfl-northern-face prepend)
+    ("Piccadilly line" 0 'org-tfl-piccadilly-face prepend)
+    ("Victoria line" 0 'org-tfl-victoria-face prepend)
+    ("Waterloo and City line" 0 'org-tfl-waterloo-face prepend))
+  "Mapping of lines to faces.")
+
+(font-lock-add-keywords 'org-mode org-tfl-line-faces t)
+#+END_EXAMPLE
+
+** Maps
+
+What's really cool about the TfL API are the paths with exact geo locations.
+You can use those to draw a map. If you have access to the google maps api, you could
+create a route and give the user a link to an interactive map.
+But in Emacs we need static images. Luckily the google maps API also features static maps.
+All you need is a crafted url with all the geo positions.
+The positions have to be concatenated with the pipe character.
+The first and last positions should be used as marker positions.
+
+#+BEGIN_EXAMPLE
+https://maps.google.com/maps/api/staticmap?size=800x800&maptype=roadmap&path=color:0xff0000ff|weight:5|51.51538417456,-0.14134847217|51.51558212527,-0.13965411967&markers=label:S|color:blue|51.51538417456,-0.14134847217&markers=label:E|color:red|51.51558212527,-0.13965411967
+#+END_EXAMPLE
+
+You can either insert that link in as an org link or download the picture to a temp location and
+create a link to that temp file. This enables inline images.
+
+Careful though. The link can only be roughly around 2000 characters long.
+For long paths you have to split them up and create several links.
+
+* Final Result
+
+Turns out the tfl package can be really useful.
+The headings show up in your agenda view and allow for a quick check for when you have to leave.
+I made it available on [[https://melpa.org/#/org-tfl][melpa]] and of course [[https://github.com/storax/org-tfl][github]].
+
+[[file:maps.png][Final Result]]
+Click on the link to view the final result
+
+Now turns out, after a week you know your commute and trains go every 2 minutes, so I actually don't use
+it anymore.
+
+The same concept could be applied to other public transportation APIs or the Google Maps API.
+This would make it available for a broader audience.
+Anyway I learned a lot and it was quite fun.
