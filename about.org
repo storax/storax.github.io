@@ -1,0 +1,17 @@
+#+TITLE:       About
+#+AUTHOR:      David Zuber
+#+EMAIL:       zuber.david@gmx.de
+#+DATE:        2016-04-24 Sun
+#+URI:         /about/
+#+KEYWORDS:    About, David Zuber
+#+LANGUAGE:    en
+#+OPTIONS:     H:3 num:nil toc:nil \n:nil @:t ::t |:t ^:nil -:t f:t *:t <:t
+#+DESCRIPTION: About David Zuber
+
+
+This is my personal blog. Not much going on at the moment.
+
+- [[mailto:zuber <dot> david <at> gmx <dot> de][Email]]
+- [[https://github.com/storax][GitHub]]
+- [[https://twitter.com/gievbacknameplx][Twitter]]
+- [[linkedin.com/in/zuberdavid][LinkedIn]]

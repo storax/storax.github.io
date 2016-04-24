@@ -1,0 +1,12 @@
+#+TITLE:       Home
+#+AUTHOR:      David Zuber
+#+EMAIL:       zuber.david@gmx.de
+#+DATE:        2016-04-24 Sun
+#+URI:         /
+#+KEYWORDS:    Lisp, Emacs, Python, Linux, Org-page, Programming, Blog, David Zuber
+#+LANGUAGE:    en
+#+OPTIONS:     H:3 num:nil toc:nil \n:nil @:t ::t |:t ^:nil -:t f:t *:t <:t
+#+DESCRIPTION: storax's homepage
+
+
+100% organic emacs org-mode blog.
