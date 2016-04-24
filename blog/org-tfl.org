@@ -34,7 +34,7 @@ That was actually a big surprise. The [[https://api-portal.tfl.gov.uk][API]] is 
 Yes, you can plan journeys. But there is actually much more.
 344 traffic cams are available, live! You can get a [[http://www.tfl.gov.uk/tfl/livetravelnews/trafficcams/cctv/jamcams-camera-list.xml][xml file]] with all of them listed.
 
-#+BEGIN_EXAMPLE nxml
+#+BEGIN_SRC nxml
   <syndicatedFeed>
     <header>
       <identifier>TfL Traffic Cameras</identifier>
@@ -67,7 +67,7 @@ Yes, you can plan journeys. But there is actually much more.
       </camera>
     </cameraList>
   </syndicatedFeed>
-#+END_EXAMPLE
+#+END_SRC
 
 Combining the =rooturl= with a =file= from the =camera= will get you a link like:
 
@@ -91,7 +91,7 @@ For each location type (to, from, via) there is a list with possible candidates.
 The user has to select one of each and then you send a new request with the more precise
 information.
 
-#+BEGIN_EXAMPLE json
+#+BEGIN_SRC json
 {
   "$type": "Tfl.Api.Presentation.Entities.JourneyPlanner.DisambiguationResult, Tfl.Api.Presentation.Entities",
   "toLocationDisambiguation": {
@@ -203,7 +203,7 @@ information.
     "uri": "\/journey\/journeyresults\/bank\/to\/westminster"
   }
 }
-#+END_EXAMPLE
+#+END_SRC
 
 The issue is, that for stops you would need to send the =icsCode= and for others the latitude and longitude data.
 I discovered that you can always take the latitude and longitude data for an unambiguous result.
@@ -220,7 +220,7 @@ Curiously at first it still worked randomly without that fix.
 
 Now once you request your journey with unique locations you get a proper result back:
 
-#+BEGIN_EXAMPLE json
+#+BEGIN_SRC json
 {
   "$type": "Tfl.Api.Presentation.Entities.JourneyPlanner.ItineraryResult, Tfl.Api.Presentation.Entities",
   "journeys": [
@@ -251,7 +251,7 @@ Now once you request your journey with unique locations you get a proper result 
   "searchCriteria": {...},
   "journeyVector": {...}
 }
-#+END_EXAMPLE
+#+END_SRC
 
 The intersting parts are the journeys and especially their =legs= list.
 Also =lines= can is usefull to get information about disruption.
@@ -260,7 +260,7 @@ So with this list of journeys we already know when to leave and when we arrive.
 But we don't know how to get there.
 That's where =legs= become important. They provide very indepth information.
 
-#+BEGIN_EXAMPLE json
+#+BEGIN_SRC json
 "legs": [
         {
           "$type": "Tfl.Api.Presentation.Entities.JourneyPlanner.Leg, Tfl.Api.Presentation.Entities",
@@ -286,7 +286,7 @@ That's where =legs= become important. They provide very indepth information.
         },
         ...
       ]
-#+END_EXAMPLE
+#+END_SRC
 
 So here we actually get not only instructions generated for us, but also
 a list of obstacles (e.g. elevator is out of order), the path with exact geo locations,
@@ -301,13 +301,13 @@ It's only a matter of parsing the information and presenting it to the user.
 =org-mode= uses a different handler function and you can extend those with your own link types.
 I added a handler for =org-tfl:= links.
 
-#+BEGIN_EXAMPLE emacs-lisp
+#+BEGIN_SRC emacs-lisp
 (org-add-link-type "org-tfl" 'org-tfl-jp-open-org-link)
-#+END_EXAMPLE
+#+END_SRC
 
 The handler function simplified looks like this:
 
-#+BEGIN_EXAMPLE emacs-lisp
+#+BEGIN_SRC emacs-lisp
 (defun org-tfl-jp-open-org-link (&optional path)
   "Open a org-tfl link.  PATH is ignored.  Properties of the paragraph are used instead."
   (let* ((element (org-element-at-point))
@@ -320,12 +320,12 @@ The handler function simplified looks like this:
       (setq TIME (format-time-string "%H%M" SCHEDULED)))
     (org-tfl-jp-retrieve-org
      FROM TO :via VIA :date DATE :time TIME)))
-#+END_EXAMPLE
+#+END_SRC
 
 This assumes that the link is part of a heading and the paragraph has some special properties.
 I have a nother function which writes these links and properties automatically.
 
-#+BEGIN_EXAMPLE org
+#+BEGIN_SRC org
 \*\* [[org-tfl:][Retrieving Information...]]
   SCHEDULED: <2016-04-24 So 13:59>
   :PROPERTIES:
@@ -333,7 +333,7 @@ I have a nother function which writes these links and properties automatically.
   :TO:       Liverpool Street
   :TIMEIS:   Departing
   :END:
-#+END_EXAMPLE
+#+END_SRC
 
 Once all the results are retrieved, I come back to the opened link, and replace the
 link description, paragraph and properties with the parsed result.
@@ -349,7 +349,7 @@ I collected loads of those svg icons and had to modify them by hand.
 Most of the time it's a simple resize.
 Emacs can edit svgs in plain text. They are like xml.
 
-#+BEGIN_EXAMPLE nxml
+#+BEGIN_SRC nxml
 <?xml version="1.0" encoding="iso-8859-1"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="20" viewBox="0 0 640 520">
   <title>London DLR</title>
@@ -360,7 +360,7 @@ Emacs can edit svgs in plain text. They are like xml.
     <path d="M 0,260 H 640" stroke-width="100" />
   </g>
 </svg>
-#+END_EXAMPLE
+#+END_SRC
 
 To resize an image, it's best to add the =viewBox= attribute with the original size.
 Then you can easily adjust =height= and =width= to your liking without having to worry about
@@ -370,13 +370,13 @@ The downside is, that the images and icons don't scale at the moment.
 So it only works for one font and font size.
 
 Now when you have the path to an svg or png image file, all you need to insert it in a buffer is:
-#+BEGIN_EXAMPLE emacs-lisp
+#+BEGIN_SRC emacs-lisp
 (insert
  (propertize "  " 'display
   (create-image
    (with-temp-buffer (insert-file-contents "path/to/image.svg") (buffer-string))
    'svg t :ascent 80 :mask 'heuristic)))
-#+END_EXAMPLE
+#+END_SRC
 The string can be an alternate string for when you don't display images. But it should have roughly the same
 width as the image for best results.
 The =ascent= of 80 was perfect for my font size.
@@ -392,7 +392,7 @@ This can be done by adding =font-lock= keywords.
 
 First you need a faces with the right colors and a mapping to their names.
 Then you add it to the keywords:
-#+BEGIN_EXAMPLE emacs-lisp
+#+BEGIN_SRC emacs-lisp
 ...
 
 (defface org-tfl-waterloo-face
@@ -415,7 +415,7 @@ Then you add it to the keywords:
   "Mapping of lines to faces.")
 
 (font-lock-add-keywords 'org-mode org-tfl-line-faces t)
-#+END_EXAMPLE
+#+END_SRC
 
 ** Maps
 
