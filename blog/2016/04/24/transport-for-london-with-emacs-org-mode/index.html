@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <title>Transport for London with Emacs org-mode - Storax</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="David Zuber" />
+    <meta name="description" content="A Transport for London app for Emacs" />
+    <meta name="keywords" content="Emacs, org-mode, tfl, London, emacs-lisp, svg" />
+    <link rel="stylesheet" href="/media/css/main.css" type="text/css">
+    <link rel="stylesheet" href="/media/css/prettify.css" type="text/css">
+  </head>
+  <body class="container">
+    <div>
+      <header class="masthead">
+        <h1 class="masthead-title"><a href="/">Storax</a></h1>
+        <p>Eat sleep code repeat! Soon to be a major emacs mode.</p>
+        <ul>
+          <li><a href="/blog/">Blog</a></li>
+          <li><a href="/tags/">Tags</a></li>
+          <li><a href="/about/">About</a></li>
+          <li><a href="https://github.com/storax">GitHub</a></li>
+          <li><a href="/rss.xml">RSS</a></li>
+        </ul>
+        <form method="get" id="searchform" action="//www.google.com/search">
+          <input type="text" class="field" name="q" id="s" placeholder="Search">
+          <input type="hidden" name="as_sitesearch" value="storax.github.io">
+        </form>
+      </header>
+    </div>
+
+<div>
+<div class="post">
+<h1>Transport for London with Emacs org-mode</h1>
+<p>
+Here is how I integrated the Transport for London API in Emacs. Enjoy!
+</p>
+
+<div id="outline-container-orgheadline1" class="outline-2">
+<h2 id="orgheadline1">Motivation</h2>
+<div class="outline-text-2" id="text-orgheadline1">
+<p>
+I've moved to London in February. Some would say it's not London, it's Greater London.
+The commute is about 50 minutes to work including walking.
+Back in Stuttgart my trains would only run every half an hour so I had to plan every journey
+to minimise my layover. I was afraid it would be the same in London,
+and since I don't know the tube that well, I decided to plan in advance.
+</p>
+
+<p>
+The <a href="https://tfl.gov.uk/">Transport for London website</a> is already very nice. But I have a regular schedule
+and I don't want to type in the same input each day just to check my trains.
+Also <code>org-mode</code> became more and more part of my daily workflow.
+The agenda view is awesome and I wanted my commute to show up there.
+</p>
+
+<p>
+At that time I was very new to lisp/emacs-lisp. It sometime took me 20 minutes to find out how
+to manipulate some of the data structures. But in the end I learned a lot and now I can't stop
+writing silly Emacs packages.
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgheadline2" class="outline-2">
+<h2 id="orgheadline2">Transport for London API</h2>
+<div class="outline-text-2" id="text-orgheadline2">
+<p>
+That was actually a big surprise. The <a href="https://api-portal.tfl.gov.uk/">API</a> is simply awesome!
+Yes, you can plan journeys. But there is actually much more.
+344 traffic cams are available, live! You can get a <a href="http://www.tfl.gov.uk/tfl/livetravelnews/trafficcams/cctv/jamcams-camera-list.xml">xml file</a> with all of them listed.
+</p>
+
+<pre class="example">
+&lt;syndicatedFeed&gt;
+  &lt;header&gt;
+    &lt;identifier&gt;TfL Traffic Cameras&lt;/identifier&gt;
+    &lt;version&gt;0.1&lt;/version&gt;
+    &lt;publishDateTime&gt;2016-04-24T11:18:11Z&lt;/publishDateTime&gt;
+    &lt;author&gt;digital@tfl.gov.uk&lt;/author&gt;
+    &lt;owner&gt;Transport for London&lt;/owner&gt;
+    &lt;refreshRate&gt;1&lt;/refreshRate&gt;
+    &lt;max_Latency&gt;10&lt;/max_Latency&gt;
+    &lt;timeToError&gt;10&lt;/timeToError&gt;
+    &lt;overrideMessage/&gt;
+    &lt;errorMessage/&gt;
+    &lt;feedInfo/&gt;
+    &lt;logo&gt;http://www.tfl.gov.uk/tfl-global/images/roundel.gif&lt;/logo&gt;
+  &lt;/header&gt;
+  &lt;cameraList updated="1461493091"&gt;
+    &lt;rooturl&gt;/tfl/livetravelnews/trafficcams/cctv/&lt;/rooturl&gt;
+    &lt;camera id="00001.01251" available="true"&gt;
+      &lt;corridor&gt;-&lt;/corridor&gt;
+      &lt;location&gt;Old Street e of Vince St&lt;/location&gt;
+      &lt;currentView&gt;Test&lt;/currentView&gt;
+      &lt;file&gt;00001.01251.jpg&lt;/file&gt;
+      &lt;captureTime&gt;2016-04-24T10:15:21Z&lt;/captureTime&gt;
+      &lt;easting&gt;532787&lt;/easting&gt;
+      &lt;northing&gt;182600&lt;/northing&gt;
+      &lt;lat&gt;51.5262&lt;/lat&gt;
+      &lt;lng&gt;-0.08563&lt;/lng&gt;
+      &lt;osgr&gt;TQ328826&lt;/osgr&gt;
+      &lt;postCode/&gt;
+    &lt;/camera&gt;
+  &lt;/cameraList&gt;
+&lt;/syndicatedFeed&gt;
+</pre>
+
+<p>
+Combining the <code>rooturl</code> with a <code>file</code> from the <code>camera</code> will get you a link like:
+</p>
+
+<pre class="example">
+https://tfl.gov.uk/tfl/livetravelnews/trafficcams/cctv/00001.01251.jpg
+</pre>
+
+<p>
+Enter it in your browser to receive the latest image from that traffic camera.
+</p>
+
+<p>
+There is a nice interactive <a href="https://api.tfl.gov.uk/">API explorer site</a>. What I needed was the <a href="https://api.tfl.gov.uk/#Journey">journey planner API</a>.
+There are a lot of parameters but what you essentially need is something like this:
+</p>
+
+<pre class="example">
+https://api.tfl.gov.uk/Journey/JourneyResults/Bank/to/Westminster
+</pre>
+
+<p>
+This will try to retrieve a journey from Bank to Westminster.
+The problem is that TfL knows way more than one Bank or Westminster station.
+It will return a response with something like a 300 status code and a disambiguation result:
+For each location type (to, from, via) there is a list with possible candidates.
+The user has to select one of each and then you send a new request with the more precise
+information.
+</p>
+
+<pre class="example">
+{
+  "$type": "Tfl.Api.Presentation.Entities.JourneyPlanner.DisambiguationResult, Tfl.Api.Presentation.Entities",
+  "toLocationDisambiguation": {
+    "$type": "Tfl.Api.Presentation.Entities.JourneyPlanner.Disambiguation, Tfl.Api.Presentation.Entities",
+    "disambiguationOptions": [
+      {
+        "$type": "Tfl.Api.Presentation.Entities.JourneyPlanner.DisambiguationOption, Tfl.Api.Presentation.Entities",
+        "parameterValue": "1000266",
+        "uri": "\/journey\/journeyresults\/bank\/to\/1000266",
+        "place": {
+          "$type": "Tfl.Api.Presentation.Entities.StopPoint, Tfl.Api.Presentation.Entities",
+          "naptanId": "HUBWSM",
+          "modes": [
+            "tube"
+          ],
+          "icsCode": "1000266",
+          "stopType": "stop",
+          "url": "https:\/\/api-neon.tfl.gov.uk\/StopPoint\/HUBWSM",
+          "commonName": "Westminster (London), Westminster",
+          "placeType": "StopPoint",
+          "additionalProperties": [],
+          "lat": 51.50139978595,
+          "lon": -0.12490128591
+        },
+        "matchQuality": 1000
+      },
+      {
+        "$type": "Tfl.Api.Presentation.Entities.JourneyPlanner.DisambiguationOption, Tfl.Api.Presentation.Entities",
+        "parameterValue": "1002085",
+        "uri": "\/journey\/journeyresults\/bank\/to\/1002085",
+        "place": {
+          "$type": "Tfl.Api.Presentation.Entities.StopPoint, Tfl.Api.Presentation.Entities",
+          "naptanId": "930GWMR",
+          "modes": [
+            "river-bus"
+          ],
+          "icsCode": "1002085",
+          "stopType": "stop",
+          "url": "https:\/\/api-neon.tfl.gov.uk\/StopPoint\/930GWMR",
+          "commonName": "Westminster (London), Westminster Pier",
+          "placeType": "StopPoint",
+          "additionalProperties": [],
+          "lat": 51.50181087832,
+          "lon": -0.12361646769000001
+        },
+        "matchQuality": 967
+        }
+    ],
+    "matchStatus": "list"
+  },
+  "fromLocationDisambiguation": {
+    "$type": "Tfl.Api.Presentation.Entities.JourneyPlanner.Disambiguation, Tfl.Api.Presentation.Entities",
+    "disambiguationOptions": [
+      {
+        "$type": "Tfl.Api.Presentation.Entities.JourneyPlanner.DisambiguationOption, Tfl.Api.Presentation.Entities",
+        "parameterValue": "1000013",
+        "uri": "\/journey\/journeyresults\/1000013\/to\/westminster",
+        "place": {
+          "$type": "Tfl.Api.Presentation.Entities.StopPoint, Tfl.Api.Presentation.Entities",
+          "naptanId": "HUBBAN",
+          "modes": [
+            "dlr",
+            "tube"
+          ],
+          "icsCode": "1000013",
+          "stopType": "stop",
+          "url": "https:\/\/api-neon.tfl.gov.uk\/StopPoint\/HUBBAN",
+          "commonName": "City of London, Bank",
+          "placeType": "StopPoint",
+          "additionalProperties": [],
+          "lat": 51.513389043480004,
+          "lon": -0.08882541444
+        },
+        "matchQuality": 1000
+      },
+      {
+        "$type": "Tfl.Api.Presentation.Entities.JourneyPlanner.DisambiguationOption, Tfl.Api.Presentation.Entities",
+        "parameterValue": "51.66151925957,-0.09419500928",
+        "uri": "\/journey\/journeyresults\/51.66151925957,-0.09419500928\/to\/westminster",
+        "place": {
+          "$type": "Tfl.Api.Presentation.Entities.Place, Tfl.Api.Presentation.Entities",
+          "url": "https:\/\/api-neon.tfl.gov.uk\/Place\/",
+          "commonName": "Bankside, Enfield (London)",
+          "placeType": "StopPoint",
+          "additionalProperties": [],
+          "lat": 51.66151925957,
+          "lon": -0.09419500927999999
+        },
+        "matchQuality": 964
+      }
+     ],
+    "matchStatus": "list"
+  },
+  "viaLocationDisambiguation": {
+    "$type": "Tfl.Api.Presentation.Entities.JourneyPlanner.Disambiguation, Tfl.Api.Presentation.Entities",
+    "matchStatus": "empty"
+  },
+  "recommendedMaxAgeMinutes": 1440,
+  "searchCriteria": {
+    "$type": "Tfl.Api.Presentation.Entities.JourneyPlanner.SearchCriteria, Tfl.Api.Presentation.Entities",
+    "dateTime": "2016-04-24T11:32:00",
+    "dateTimeType": "Departing"
+  },
+  "journeyVector": {
+    "$type": "Tfl.Api.Presentation.Entities.JourneyPlanner.JourneyVector, Tfl.Api.Presentation.Entities",
+    "from": "Bank",
+    "to": "Westminster",
+    "via": "",
+    "uri": "\/journey\/journeyresults\/bank\/to\/westminster"
+  }
+}
+</pre>
+
+<p>
+The issue is, that for stops you would need to send the <code>icsCode</code> and for others the latitude and longitude data.
+I discovered that you can always take the latitude and longitude data for an unambiguous result.
+The only issue is that the journey will always include a 10m - 50m walk at the beginning and end.
+</p>
+
+<p>
+I noticed that sometimes emacs wouldn't call my callback after the response was received.
+It just got stuck waiting for more from the server.
+After activating the <code>url-http-debug</code> mode, I noticed that this happens with 300s status codes.
+<code>url-retrieve</code> will get stuck in "Spinning waiting for headers", which never
+completes so the callback is never called.
+The <code>url-http-parse-headers</code> function doesn't handle the 300 status code, well.
+So I had to override the function to simply set <code>success</code> to <code>t</code> for said status code.
+Curiously at first it still worked randomly without that fix.
+</p>
+
+<p>
+Now once you request your journey with unique locations you get a proper result back:
+</p>
+
+<pre class="example">
+{
+  "$type": "Tfl.Api.Presentation.Entities.JourneyPlanner.ItineraryResult, Tfl.Api.Presentation.Entities",
+  "journeys": [
+    {
+      "$type": "Tfl.Api.Presentation.Entities.JourneyPlanner.Journey, Tfl.Api.Presentation.Entities",
+      "startDateTime": "2016-04-24T12:57:00",
+      "duration": 13,
+      "arrivalDateTime": "2016-04-24T13:10:00",
+      "legs": [...]
+    },
+    {
+      "$type": "Tfl.Api.Presentation.Entities.JourneyPlanner.Journey, Tfl.Api.Presentation.Entities",
+      "startDateTime": "2016-04-24T12:58:00",
+      "duration": 13,
+      "arrivalDateTime": "2016-04-24T13:11:00",
+      "legs": [...]
+    },
+    {
+      "$type": "Tfl.Api.Presentation.Entities.JourneyPlanner.Journey, Tfl.Api.Presentation.Entities",
+      "startDateTime": "2016-04-24T13:02:00",
+      "duration": 12,
+      "arrivalDateTime": "2016-04-24T13:14:00",
+      "legs": [...]
+    }
+  ],
+  "lines": [...],
+  "recommendedMaxAgeMinutes": 4,
+  "searchCriteria": {...},
+  "journeyVector": {...}
+}
+</pre>
+
+<p>
+The intersting parts are the journeys and especially their <code>legs</code> list.
+Also <code>lines</code> can is usefull to get information about disruption (later more about that).
+</p>
+
+<p>
+So with this list of journeys we already know when to leave and when we arrive.
+But we don't know how to get there.
+That's where <code>legs</code> become important. They provide very indepth information.
+</p>
+
+<pre class="example">
+"legs": [
+        {
+          "$type": "Tfl.Api.Presentation.Entities.JourneyPlanner.Leg, Tfl.Api.Presentation.Entities",
+          "duration": 5,
+          "instruction": {
+            "$type": "Tfl.Api.Presentation.Entities.Instruction, Tfl.Api.Presentation.Entities",
+            "summary": "Jubilee line to London Bridge",
+            "detailed": "Jubilee line towards Stratford, or North Greenwich",
+            "steps": []
+          },
+          "obstacles": [...],
+          "departureTime": "2016-04-24T12:57:00",
+          "arrivalTime": "2016-04-24T13:02:00",
+          "departurePoint": {...},
+          "arrivalPoint": {...},
+          "path": {...},
+          "routeOptions": [...],
+          "mode": {...},
+          "disruptions": [...],
+          "plannedWorks": [],
+          "isDisrupted": true,
+          "hasFixedLocations": true
+        },
+        ...
+      ]
+</pre>
+
+<p>
+So here we actually get not only instructions generated for us, but also
+a list of obstacles (e.g. elevator is out of order), the path with exact geo locations,
+disruptions and planned work information and more.
+</p>
+
+<p>
+It's only a matter of parsing the information and presenting it to the user.
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgheadline7" class="outline-2">
+<h2 id="orgheadline7">Org Mode</h2>
+<div class="outline-text-2" id="text-orgheadline7">
+</div><div id="outline-container-orgheadline3" class="outline-3">
+<h3 id="orgheadline3">Links</h3>
+<div class="outline-text-3" id="text-orgheadline3">
+<p>
+<code>org-mode</code> has a great feature for links. Depending on the protocol (e.g. http or file) in the url
+<code>org-mode</code> uses a different handler function and you can extend those with your own link types.
+I added a handler for <code>org-tfl:</code> links.
+</p>
+
+<pre class="example">
+(org-add-link-type "org-tfl" 'org-tfl-jp-open-org-link)
+</pre>
+
+<p>
+The handler function simplified looks like this:
+</p>
+
+<pre class="example">
+(defun org-tfl-jp-open-org-link (&amp;optional path)
+  "Open a org-tfl link.  PATH is ignored.  Properties of the paragraph are used instead."
+  (let* ((element (org-element-at-point))
+	 (FROM (org-element-property :FROM element))
+	 (TO (org-element-property :TO element))
+	 (VIA (org-element-property :VIA element))
+	 (SCHEDULED (org-get-scheduled-time (point))))
+    (when SCHEDULED
+      (setq DATE (format-time-string "%Y%m%d" SCHEDULED))
+      (setq TIME (format-time-string "%H%M" SCHEDULED)))
+    (org-tfl-jp-retrieve-org
+     FROM TO :via VIA :date DATE :time TIME)))
+</pre>
+
+<p>
+This assumes that the link is part of a heading and the paragraph has some special properties.
+I have a nother function which writes these links and properties automatically.
+</p>
+
+<pre class="example">
+\*\* [[org-tfl:][Retrieving Information...]]
+  SCHEDULED: &lt;2016-04-24 So 13:59&gt;
+  :PROPERTIES:
+  :FROM:     Picadilly Circus
+  :TO:       Liverpool Street
+  :TIMEIS:   Departing
+  :END:
+</pre>
+
+<p>
+Once all the results are retrieved, I come back to the opened link, and replace the
+link description, paragraph and properties with the parsed result.
+</p>
+
+<p>
+<a href="/assets/blog/2016/04/24/transport-for-london-with-emacs-org-mode/itinerary_result.png">Itinerary Result</a>
+Click on the link to view a screenshot.
+</p>
+
+<p>
+The link can be opened again to update the result.
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgheadline4" class="outline-3">
+<h3 id="orgheadline4">Icons</h3>
+<div class="outline-text-3" id="text-orgheadline4">
+<p>
+All icons are svg which are inserted via text properties.
+I collected loads of those svg icons and had to modify them by hand.
+Most of the time it's a simple resize.
+Emacs can edit svgs in plain text. They are like xml.
+</p>
+
+<pre class="example">
+&lt;?xml version="1.0" encoding="iso-8859-1"?&gt;
+&lt;svg xmlns="http://www.w3.org/2000/svg" width="18" height="20" viewBox="0 0 640 520"&gt;
+  &lt;title&gt;London DLR&lt;/title&gt;
+  &lt;g stroke="#009999" fill="none"&gt;
+    &lt;circle cx="320" cy="260" r="215" stroke-width="90"/&gt;
+  &lt;/g&gt;
+  &lt;g stroke="#0019a8" fill="none"&gt;
+    &lt;path d="M 0,260 H 640" stroke-width="100" /&gt;
+  &lt;/g&gt;
+&lt;/svg&gt;
+</pre>
+
+<p>
+To resize an image, it's best to add the <code>viewBox</code> attribute with the original size.
+Then you can easily adjust <code>height</code> and <code>width</code> to your liking without having to worry about
+positioning or aspect ratio.
+</p>
+
+<p>
+The downside is, that the images and icons don't scale at the moment.
+So it only works for one font and font size.
+</p>
+
+<p>
+Now when you have the path to an svg or png image file, all you need to insert it in a buffer is:
+</p>
+<pre class="example">
+(insert
+ (propertize "  " 'display
+  (create-image
+   (with-temp-buffer (insert-file-contents "path/to/image.svg") (buffer-string))
+   'svg t :ascent 80 :mask 'heuristic)))
+</pre>
+<p>
+The string can be an alternate string for when you don't display images. But it should have roughly the same
+width as the image for best results.
+The <code>ascent</code> of 80 was perfect for my font size.
+The <code>mask</code> value <code>heuristic</code> is needed to make transparency work.
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgheadline5" class="outline-3">
+<h3 id="orgheadline5">Underground Line Color</h3>
+<div class="outline-text-3" id="text-orgheadline5">
+<p>
+TfL has a very well thought out corporate style guide. Every color is well defined for each
+use-case.
+You can read the full specification <a href="http://content.tfl.gov.uk/tfl-colour-standard.pdf">here</a>.
+I wanted to make the tube line names highlighted with their respective color.
+This can be done by adding <code>font-lock</code> keywords.
+</p>
+
+<p>
+First you need a faces with the right colors and a mapping to their names.
+Then you add it to the keywords:
+</p>
+<pre class="example">
+...
+
+(defface org-tfl-waterloo-face
+  '((t (:foreground "white" :background "#66CCCC")))
+  "Waterloo and City Line Face"
+  :group 'org-tfl)
+
+(defvar org-tfl-line-faces
+  '(("Bakerloo line" 0 'org-tfl-bakerloo-face prepend)
+    ("Central line" 0 'org-tfl-central-face prepend)
+    ("Circle line" 0 'org-tfl-circle-face prepend)
+    ("District line" 0 'org-tfl-district-face prepend)
+    ("Hammersmith &amp; City line" 0 'org-tfl-hammersmith-face prepend)
+    ("Jubilee line" 0 'org-tfl-jubliee-face prepend)
+    ("Metropolitan line" 0 'org-tfl-metropolitan-face prepend)
+    ("Northern line" 0 'org-tfl-northern-face prepend)
+    ("Piccadilly line" 0 'org-tfl-piccadilly-face prepend)
+    ("Victoria line" 0 'org-tfl-victoria-face prepend)
+    ("Waterloo and City line" 0 'org-tfl-waterloo-face prepend))
+  "Mapping of lines to faces.")
+
+(font-lock-add-keywords 'org-mode org-tfl-line-faces t)
+</pre>
+</div>
+</div>
+
+<div id="outline-container-orgheadline6" class="outline-3">
+<h3 id="orgheadline6">Maps</h3>
+<div class="outline-text-3" id="text-orgheadline6">
+<p>
+What's really cool about the TfL API are the paths with exact geo locations.
+You can use those to draw a map. If you have access to the google maps api, you could
+create a route and give the user a link to an interactive map.
+But in Emacs we need static images. Luckily the google maps API also features static maps.
+All you need is a crafted url with all the geo positions.
+The positions have to be concatenated with the pipe character.
+The first and last positions should be used as marker positions.
+</p>
+
+<pre class="example">
+https://maps.google.com/maps/api/staticmap?size=800x800&amp;maptype=roadmap&amp;path=color:0xff0000ff|weight:5|51.51538417456,-0.14134847217|51.51558212527,-0.13965411967&amp;markers=label:S|color:blue|51.51538417456,-0.14134847217&amp;markers=label:E|color:red|51.51558212527,-0.13965411967
+</pre>
+
+<p>
+You can either insert that link in as an org link or download the picture to a temp location and
+create a link to that temp file. This enables inline images.
+</p>
+
+<p>
+Careful though. The link can only be roughly around 2000 characters long.
+For long paths you have to split them up and create several links.
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgheadline8" class="outline-2">
+<h2 id="orgheadline8">Final Result</h2>
+<div class="outline-text-2" id="text-orgheadline8">
+<p>
+Turns out the tfl package can be really useful.
+The headings show up in your agenda view and allow for a quick check for when you have to leave.
+I made it available on <a href="https://melpa.org/#/org-tfl">melpa</a> and of course <a href="https://github.com/storax/org-tfl">github</a>.
+</p>
+
+<p>
+<a href="/assets/blog/2016/04/24/transport-for-london-with-emacs-org-mode/maps.png">Final Result</a>
+Click on the link to view the final result
+</p>
+
+<p>
+Now turns out, after a week you know your commute and trains go every 2 minutes, so I actually don't use
+it anymore.
+</p>
+
+<p>
+The same concept could be applied to other public transportation APIs or the Google Maps API.
+This would make it available for a broader audience.
+Anyway I learned a lot and it was quite fun.
+</p>
+</div>
+</div>
+
+</div>
+</div>
+    <div>
+      <div class="post-meta">
+        <span title="post date" class="post-info">2016-04-24</span>
+        <span title="last modification date" class="post-info">2016-04-24</span>
+        <span title="tags" class="post-info"><a href="/tags/emacs/">Emacs</a>, <a href="/tags/org-mode/">org-mode</a>, <a href="/tags/tfl/">tfl</a>, <a href="/tags/london/">London</a>, <a href="/tags/emacs-lisp/">emacs-lisp</a>, <a href="/tags/svg/">svg</a></span>
+        <span title="author" class="post-info">David Zuber</span>
+      </div>
+      <section>
+        <h1>Comments</h1>
+        <div id="disqus_thread"></div>
+        <script type="text/javascript">
+          //var disqus_developer = 1;
+          var disqus_identifier = "/blog/2016/04/24/transport-for-london-with-emacs-org-mode";
+          var disqus_url = "https://storax.github.io/blog/2016/04/24/transport-for-london-with-emacs-org-mode";
+          var disqus_shortname = 'storaxgithubio';
+          /* * * DON'T EDIT BELOW THIS LINE * * */
+          (function() {
+          var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+          dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+          (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+          })();
+        </script>
+        <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+        <a href="//disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+      </section>
+      <script src="//code.jquery.com/jquery-latest.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.js"></script>
+      <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script src="/media/js/main.js"></script>
+      <div class="footer">
+        <p>Generated by <a href="http://www.gnu.org/software/emacs/">Emacs</a> 24.x (<a href="http://orgmode.org">Org mode</a> 8.x)</p>
+        <p>
+          Copyright &copy; 2012 - <span id="footerYear"></span> <a href="mailto:zuber &lt;dot&gt; david &lt;at&gt; gmx &lt;dot&gt; de">David Zuber</a>
+          &nbsp;&nbsp;-&nbsp;&nbsp;
+          Powered by <a href="https://github.com/kelvinh/org-page" target="_blank">org-page</a>
+          <script type="text/javascript">document.getElementById("footerYear").innerHTML = (new Date()).getFullYear();</script>
+        </p>
+      </div>
+    </div>
+
+  </body>
+</html>
