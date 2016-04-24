@@ -7,7 +7,7 @@
 #+TAGS:        :org-mode:Emacs:org-page:
 #+LANGUAGE:    en
 #+OPTIONS:     H:3 num:nil toc:nil \n:nil ::t |:t ^:nil -:nil f:t *:t <:t
-#+DESCRIPTION: hello world
+#+DESCRIPTION: Hello World
 
 I guess it was only a matter of time.
 It feels like I've passed the tipping point where Emacs starts to take over
