@@ -254,7 +254,7 @@ Now once you request your journey with unique locations you get a proper result 
 #+END_EXAMPLE
 
 The intersting parts are the journeys and especially their =legs= list.
-Also =lines= can is usefull to get information about disruption (later more about that).
+Also =lines= can is usefull to get information about disruption.
 
 So with this list of journeys we already know when to leave and when we arrive.
 But we don't know how to get there.
@@ -338,8 +338,7 @@ I have a nother function which writes these links and properties automatically.
 Once all the results are retrieved, I come back to the opened link, and replace the
 link description, paragraph and properties with the parsed result.
 
-[[file:itinerary_result.png][Itinerary Result]]
-Click on the link to view a screenshot.
+[[file:itinerary_result.png]]
 
 The link can be opened again to update the result.
 
@@ -444,8 +443,7 @@ Turns out the tfl package can be really useful.
 The headings show up in your agenda view and allow for a quick check for when you have to leave.
 I made it available on [[https://melpa.org/#/org-tfl][melpa]] and of course [[https://github.com/storax/org-tfl][github]].
 
-[[file:maps.png][Final Result]]
-Click on the link to view the final result
+[[file:maps.png]]
 
 Now turns out, after a week you know your commute and trains go every 2 minutes, so I actually don't use
 it anymore.
