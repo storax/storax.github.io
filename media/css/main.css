@@ -104,12 +104,10 @@ code, pre {
     font-family: Menlo, Monaco, Consolas, "Courier New", monospace;
 }
 code {
-    color: #d14;
+    color: #666;
+    background-color: #ddd;
 }
-code:before, code:after {
-    content: "=";
-    color: #ccc;
-}
+
 pre {
     display: block;
     margin: 0 0 14px;
@@ -117,7 +115,8 @@ pre {
     border-radius: 3px 3px 3px 3px;
     font-size: 18px;
     line-height: 28px;
-    background-color: #f5f5f5;
+    color: #eeeeee;
+    background-color: #3f3f3f;
     white-space: pre;
     white-space: pre-wrap;
     word-break: break-all;
