@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <title>XMG P505 Headphone Jack - Sounds Easy - Storax</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="David Zuber" />
+    <meta name="description" content="How to get the headphone jack of an XMG P505 to work under Linux." />
+    <meta name="keywords" content="linux, audio, XMG, schenker, P505, alsa, ALC892" />
+    <link rel="stylesheet" href="/media/css/main.css" type="text/css">
+    <link rel="stylesheet" href="/media/css/prettify.css" type="text/css">
+  </head>
+  <body class="container">
+    <div>
+      <header class="masthead">
+        <h1 class="masthead-title"><a href="/">Storax</a></h1>
+        <p>Eat sleep code repeat! Soon to be a major emacs mode.</p>
+        <ul>
+          <li><a href="/blog/">Blog</a></li>
+          <li><a href="/tags/">Tags</a></li>
+          <li><a href="/about/">About</a></li>
+          <li><a href="https://github.com/storax">GitHub</a></li>
+          <li><a href="/rss.xml">RSS</a></li>
+        </ul>
+        <form method="get" id="searchform" action="//www.google.com/search">
+          <input type="text" class="field" name="q" id="s" placeholder="Search">
+          <input type="hidden" name="as_sitesearch" value="storax.github.io">
+        </form>
+      </header>
+    </div>
+
+<div>
+<div class="post">
+<h1>XMG P505 Headphone Jack - Sounds Easy</h1>
+<p>
+The original article was first published 20/07/2015 on my old blog. It has been slightly modified.
+</p>
+
+<p>
+I recently bought a new notebook. The XMG P505 by Schenker Technologies. I chose Schenker because after reading about their products and examining their website, i noticed that they do a lot of things right!
+</p>
+
+<p>
+Things I liked about the options and notebooks:
+</p>
+<ul class="org-ul">
+<li>Displays are all matte.</li>
+<li>Good customization.</li>
+<li>Notebooks are generally easy to upgrade. I can replace the battery.</li>
+<li>Options for loads of memory.</li>
+<li>Change of keyboard layout free of charge.</li>
+<li>Option for no laser engraving of the company logo.</li>
+<li>Optionally without OS</li>
+<li>No crap-ware preinstalled</li>
+<li>Reasonable configurations of things like RAID.</li>
+<li>Additional customer whishes via comments.</li>
+<li>Metal chassis</li>
+</ul>
+
+<p>
+They use barebones from Clevo and customize them according to your demands.
+</p>
+
+<p>
+At first I head problems with the headphone-jack on Windows 8.1. Apparently you have to install it in UEFI mode.
+But I came to my senses and installed Ubuntu as a base system.
+</p>
+
+<p>
+Anyway same problem. Headphone-jack didn't work. Called support. Support said that Windows requires to be installed in UEFI mode. For Linux it is the other way around.
+(Note: Sadly, there is no Linux Support from Schenker). Ok reinstall Ubuntu... No sound.
+</p>
+
+<p>
+Digging through countless posts about how to configure ALSA, I found a lot of useless information.
+A few weeks i worked without headphone sound until it got annoying.
+So i started another research session and found out it might be the PIN configuration.
+Well i'm no expert but apparently there is a configuration which wires the pins of the audio chip to different out and inputs.
+</p>
+
+<p>
+For Ubuntu 14.04 the default configuration is in <code>/sys/class/sound/hwC1D0/init_pin_configs</code>:
+</p>
+
+<pre class="example">
+0x11 0x4010c000
+0x12 0x90a60150
+0x14 0x90170110
+0x15 0x411111f0
+0x16 0x411111f0
+0x17 0x01011020
+0x18 0x01a11060
+0x19 0x411111f0
+0x1a 0x411111f0
+0x1b 0x01011030
+0x1c 0x411111f0
+0x1d 0x40341429
+0x1e 0x01441140
+0x1f 0x411111f0
+</pre>
+
+<p>
+NOTE: hwC1D0 is my Hda Intel PCH Soundcard
+</p>
+
+<p>
+The PIN of interest in this case was <code>0x1b</code>. I found out that I head to configure it as <code>Headphone</code>. You can do that by overriding it in <code>/sys/class/sound/hwC1D0/user_pin_config</code>:
+</p>
+
+<pre class="example">
+0x1b 0x0321403f
+</pre>
+
+<p>
+If you don't want to do it by hand, I recommend the <b>hdajackretask</b> tool.
+It's part of the <b>alsa-tools-gui</b> package. Open it and select the right audio codec (<code>Realtek ALC892</code> in my case).
+Then you can override all PINs in a graphical interaface and click <code>Apply now</code>. <b>BOOM MAGIC</b>... it works.
+</p>
+
+<p>
+I'm really glad I could resolve this issue. Buying an expensive notebook that doesn't work out-of-the-box with Linux is a little bit scary :).
+</p>
+
+</div>
+</div>
+    <div>
+      <div class="post-meta">
+        <span title="post date" class="post-info">2016-04-24</span>
+        <span title="last modification date" class="post-info">2016-04-24</span>
+        <span title="tags" class="post-info"><a href="/tags/linux/">linux</a>, <a href="/tags/audio/">audio</a>, <a href="/tags/xmg/">XMG</a>, <a href="/tags/p505/">P505</a>, <a href="/tags/schenker/">schenker</a>, <a href="/tags/alsa/">alsa</a>, <a href="/tags/alc892/">ALC892</a></span>
+        <span title="author" class="post-info">David Zuber</span>
+      </div>
+      <section>
+        <h1>Comments</h1>
+        <div id="disqus_thread"></div>
+        <script type="text/javascript">
+          //var disqus_developer = 1;
+          var disqus_identifier = "/blog/2016/04/24/xmg-p505-headphone-jack---sounds-easy";
+          var disqus_url = "https://storax.github.io/blog/2016/04/24/xmg-p505-headphone-jack---sounds-easy";
+          var disqus_shortname = 'storaxgithubio';
+          /* * * DON'T EDIT BELOW THIS LINE * * */
+          (function() {
+          var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+          dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+          (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+          })();
+        </script>
+        <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+        <a href="//disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+      </section>
+      <script src="//code.jquery.com/jquery-latest.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.js"></script>
+      <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script src="/media/js/main.js"></script>
+      <div class="footer">
+        <p>Generated by <a href="http://www.gnu.org/software/emacs/">Emacs</a> 24.x (<a href="http://orgmode.org">Org mode</a> 8.x)</p>
+        <p>
+          Copyright &copy; 2012 - <span id="footerYear"></span> <a href="mailto:zuber &lt;dot&gt; david &lt;at&gt; gmx &lt;dot&gt; de">David Zuber</a>
+          &nbsp;&nbsp;-&nbsp;&nbsp;
+          Powered by <a href="https://github.com/kelvinh/org-page" target="_blank">org-page</a>
+          <script type="text/javascript">document.getElementById("footerYear").innerHTML = (new Date()).getFullYear();</script>
+        </p>
+      </div>
+    </div>
+
+  </body>
+</html>
