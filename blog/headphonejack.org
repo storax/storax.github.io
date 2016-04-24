@@ -1,0 +1,73 @@
+#+TITLE:       XMG P505 Headphone Jack - Sounds Easy
+#+AUTHOR:      David Zuber
+#+EMAIL:       zuber.david@gmx.de
+#+DATE:        2016-04-24 So
+#+URI:         /blog/%y/%m/%d/xmg-p505-headphone-jack---sounds-easy
+#+KEYWORDS:    linux, audio, XMG, schenker, P505, alsa, ALC892
+#+TAGS:        :linux:audio:XMG:P505:schenker:alsa:ALC892:
+#+LANGUAGE:    en
+#+OPTIONS:     H:6 num:nil toc:nil \n:nil ::t |:t ^:nil -:nil f:t *:t <:t
+#+DESCRIPTION: How to get the headphone jack of an XMG P505 to work under Linux.
+
+The original article was first published 20/07/2015 on my old blog. It has been slightly modified.
+
+I recently bought a new notebook. The XMG P505 by Schenker Technologies. I chose Schenker because after reading about their products and examining their website, i noticed that they do a lot of things right!
+
+Things I liked about the options and notebooks:
+- Displays are all matte.
+- Good customization.
+- Notebooks are generally easy to upgrade. I can replace the battery.
+- Options for loads of memory.
+- Change of keyboard layout free of charge.
+- Option for no laser engraving of the company logo.
+- Optionally without OS
+- No crap-ware preinstalled
+- Reasonable configurations of things like RAID.
+- Additional customer whishes via comments.
+- Metal chassis
+
+They use barebones from Clevo and customize them according to your demands.
+
+At first I head problems with the headphone-jack on Windows 8.1. Apparently you have to install it in UEFI mode.
+But I came to my senses and installed Ubuntu as a base system.
+
+Anyway same problem. Headphone-jack didn't work. Called support. Support said that Windows requires to be installed in UEFI mode. For Linux it is the other way around.
+(Note: Sadly, there is no Linux Support from Schenker). Ok reinstall Ubuntu... No sound.
+
+Digging through countless posts about how to configure ALSA, I found a lot of useless information.
+A few weeks i worked without headphone sound until it got annoying.
+So i started another research session and found out it might be the PIN configuration.
+Well i'm no expert but apparently there is a configuration which wires the pins of the audio chip to different out and inputs.
+
+For Ubuntu 14.04 the default configuration is in =/sys/class/sound/hwC1D0/init_pin_configs=:
+
+#+BEGIN_EXAMPLE
+0x11 0x4010c000
+0x12 0x90a60150
+0x14 0x90170110
+0x15 0x411111f0
+0x16 0x411111f0
+0x17 0x01011020
+0x18 0x01a11060
+0x19 0x411111f0
+0x1a 0x411111f0
+0x1b 0x01011030
+0x1c 0x411111f0
+0x1d 0x40341429
+0x1e 0x01441140
+0x1f 0x411111f0
+#+END_EXAMPLE
+
+NOTE: hwC1D0 is my Hda Intel PCH Soundcard
+
+The PIN of interest in this case was =0x1b=. I found out that I head to configure it as =Headphone=. You can do that by overriding it in =/sys/class/sound/hwC1D0/user_pin_config=:
+
+#+BEGIN_EXAMPLE
+0x1b 0x0321403f
+#+END_EXAMPLE
+
+If you don't want to do it by hand, I recommend the *hdajackretask* tool.
+It's part of the *alsa-tools-gui* package. Open it and select the right audio codec (=Realtek ALC892= in my case).
+Then you can override all PINs in a graphical interaface and click =Apply now=. *BOOM MAGIC*... it works.
+
+I'm really glad I could resolve this issue. Buying an expensive notebook that doesn't work out-of-the-box with Linux is a little bit scary :).
