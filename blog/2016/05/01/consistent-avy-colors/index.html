@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en-us">
+    <head>
+    <title>Consistent avy colors - Storax</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="David Zuber" />
+        <meta name="description" content="Identify keys faster by using consistent colors when using avy." />
+        <meta name="keywords" content="emacs, emacs-lisp, avy" />
+    <link rel="stylesheet" href="/media/css/main.css" type="text/css">
+</head>
+
+    <body class="container">
+        <div>
+    <header class="masthead">
+        <h1 class="masthead-title"><a href="/">Storax</a></h1>
+        <p>Eat sleep code repeat! Soon to be a major emacs mode.</p>
+        <ul>
+                <li><a href="/blog/">Blog</a></li>
+            <li><a href="/tags/">Tags</a></li>
+            <li><a href="/about/">About</a></li>
+            <li><a href="https://github.com/storax">GitHub</a></li>
+            <li><a href="/rss.xml">RSS</a></li>
+        </ul>
+        <form method="get" id="searchform" action="//www.google.com/search">
+            <input type="text" class="field" name="q" id="s" placeholder="Search">
+            <input type="hidden" name="as_sitesearch" value="storax.github.io">
+        </form>
+    </header>
+</div>
+
+        <div>
+    <div class="post">
+            <h1>Consistent avy colors</h1>
+        <p>
+<a href="https://github.com/abo-abo/avy">Avy</a> is a very cool package to quickly jump around in Emacs.
+It marks candidates with a sequence of letters. Pressing the letters will make
+the cursor jump to the position.
+It's similar to <a href="https://github.com/winterTTr/ace-jump-mode">ace-jump</a> but uses mostly buttons on the home row.
+One issue I had was quickly identifing the first key to press.
+<a href="https://github.com/abo-abo/avy">Avy</a> uses a different color for each key in the sequence. But depending on the sequence lenght
+the color of the first key changes. The last key has always the same color.
+This is exactly the opposite of what I wanted.
+To change the behavior is somewhat ugly.
+You have to override <code>avy--overlay-at-full</code>.
+</p>
+
+<p>
+The fix reverses the face selection order so it's consistent and indepedent of
+the sequence lenght.
+Here is the code that's used by the official avy package:
+</p>
+<div class="org-src-container">
+
+<pre class="src src-emacs-lisp"><span style="color: #DCDCCC;">(</span><span style="color: #F0DFAF; font-weight: bold;">dotimes</span> <span style="color: #BFEBBF;">(</span>i len<span style="color: #BFEBBF;">)</span>
+      <span style="color: #BFEBBF;">(</span>set-text-properties <span style="color: #D0BF8F;">(</span>- len i <span style="color: #BFEBBF;">1</span><span style="color: #D0BF8F;">)</span> <span style="color: #D0BF8F;">(</span>- len i<span style="color: #D0BF8F;">)</span>
+                           `<span style="color: #D0BF8F;">(</span>face ,<span style="color: #93E0E3;">(</span>nth i avy-lead-faces<span style="color: #93E0E3;">)</span><span style="color: #D0BF8F;">)</span>
+                           str<span style="color: #BFEBBF;">)</span><span style="color: #DCDCCC;">)</span>
+</pre>
+</div>
+<p>
+It produces the following colors:
+<img src="/assets/blog/2016/05/01/consistent-avy-colors/avy-colors-wrong.png" alt="/assets/blog/2016/05/01/consistent-avy-colors/avy-colors-wrong.png" />
+</p>
+
+<p>
+Here is the fixed code:
+</p>
+<div class="org-src-container">
+
+<pre class="src src-emacs-lisp"><span style="color: #DCDCCC;">(</span><span style="color: #F0DFAF; font-weight: bold;">dotimes</span> <span style="color: #BFEBBF;">(</span>i len<span style="color: #BFEBBF;">)</span>
+      <span style="color: #BFEBBF;">(</span>set-text-properties <span style="color: #D0BF8F;">(</span>- len i <span style="color: #BFEBBF;">1</span><span style="color: #D0BF8F;">)</span> <span style="color: #D0BF8F;">(</span>- len i<span style="color: #D0BF8F;">)</span>
+                           `<span style="color: #D0BF8F;">(</span>face ,<span style="color: #93E0E3;">(</span>nth <span style="color: #9FC59F;">(</span>- len i<span style="color: #9FC59F;">)</span> avy-lead-faces<span style="color: #93E0E3;">)</span><span style="color: #D0BF8F;">)</span>
+                           str<span style="color: #BFEBBF;">)</span><span style="color: #DCDCCC;">)</span>
+</pre>
+</div>
+<p>
+And here it is in action:
+<img src="/assets/blog/2016/05/01/consistent-avy-colors/avy-colors-fixed.png" alt="/assets/blog/2016/05/01/consistent-avy-colors/avy-colors-fixed.png" />
+</p>
+
+<p>
+As you can see, sequences with one letter start with the same letter than sequences
+with muliple letters.
+Especially when two candidates are close together and overlap, this helps to identify
+the sequence start.
+</p>
+
+<p>
+You can either advice the function or simply override it.
+Here is the complete code including the fix:
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-emacs-lisp"><span style="color: #DCDCCC;">(</span><span style="color: #F0DFAF; font-weight: bold;">defun</span> <span style="color: #93E0E3;">avy--overlay-at-full</span> <span style="color: #BFEBBF;">(</span>path leaf<span style="color: #BFEBBF;">)</span>
+  <span style="color: #9FC59F;">"Create an overlay with PATH at LEAF.</span>
+<span style="color: #9FC59F;">PATH is a list of keys from tree root to LEAF.</span>
+<span style="color: #9FC59F;">LEAF is normally ((BEG . END) . WND)."</span>
+  <span style="color: #BFEBBF;">(</span><span style="color: #F0DFAF; font-weight: bold;">let*</span> <span style="color: #D0BF8F;">(</span><span style="color: #93E0E3;">(</span>path <span style="color: #9FC59F;">(</span>mapcar #'avy--key-to-char path<span style="color: #9FC59F;">)</span><span style="color: #93E0E3;">)</span>
+         <span style="color: #93E0E3;">(</span>str <span style="color: #9FC59F;">(</span>propertize
+               <span style="color: #94BFF3;">(</span>apply #'string <span style="color: #E0CF9F;">(</span>reverse path<span style="color: #E0CF9F;">)</span><span style="color: #94BFF3;">)</span>
+               'face 'avy-lead-face<span style="color: #9FC59F;">)</span><span style="color: #93E0E3;">)</span>
+         <span style="color: #93E0E3;">(</span>len <span style="color: #9FC59F;">(</span>length path<span style="color: #9FC59F;">)</span><span style="color: #93E0E3;">)</span>
+         <span style="color: #93E0E3;">(</span>beg <span style="color: #9FC59F;">(</span>avy-candidate-beg leaf<span style="color: #9FC59F;">)</span><span style="color: #93E0E3;">)</span>
+         <span style="color: #93E0E3;">(</span>wnd <span style="color: #9FC59F;">(</span>cdr leaf<span style="color: #9FC59F;">)</span><span style="color: #93E0E3;">)</span>
+         end<span style="color: #D0BF8F;">)</span>
+    <span style="color: #D0BF8F;">(</span><span style="color: #F0DFAF; font-weight: bold;">dotimes</span> <span style="color: #93E0E3;">(</span>i len<span style="color: #93E0E3;">)</span>
+      <span style="color: #93E0E3;">(</span>set-text-properties <span style="color: #9FC59F;">(</span>- len i <span style="color: #BFEBBF;">1</span><span style="color: #9FC59F;">)</span> <span style="color: #9FC59F;">(</span>- len i<span style="color: #9FC59F;">)</span>
+                           `<span style="color: #9FC59F;">(</span>face ,<span style="color: #94BFF3;">(</span>nth <span style="color: #E0CF9F;">(</span>- len i<span style="color: #E0CF9F;">)</span> avy-lead-faces<span style="color: #94BFF3;">)</span><span style="color: #9FC59F;">)</span>
+                           str<span style="color: #93E0E3;">)</span><span style="color: #D0BF8F;">)</span>
+    <span style="color: #D0BF8F;">(</span><span style="color: #F0DFAF; font-weight: bold;">when</span> <span style="color: #93E0E3;">(</span>eq avy-style 'de-bruijn<span style="color: #93E0E3;">)</span>
+      <span style="color: #93E0E3;">(</span>setq str <span style="color: #9FC59F;">(</span>concat
+                 <span style="color: #94BFF3;">(</span>propertize avy-current-path
+                             'face 'avy-lead-face-1<span style="color: #94BFF3;">)</span>
+                 str<span style="color: #9FC59F;">)</span><span style="color: #93E0E3;">)</span>
+      <span style="color: #93E0E3;">(</span>setq len <span style="color: #9FC59F;">(</span>length str<span style="color: #9FC59F;">)</span><span style="color: #93E0E3;">)</span><span style="color: #D0BF8F;">)</span>
+    <span style="color: #D0BF8F;">(</span><span style="color: #F0DFAF; font-weight: bold;">with-selected-window</span> wnd
+      <span style="color: #93E0E3;">(</span><span style="color: #F0DFAF; font-weight: bold;">save-excursion</span>
+        <span style="color: #9FC59F;">(</span>goto-char beg<span style="color: #9FC59F;">)</span>
+        <span style="color: #9FC59F;">(</span><span style="color: #F0DFAF; font-weight: bold;">let*</span> <span style="color: #94BFF3;">(</span><span style="color: #E0CF9F;">(</span>lep <span style="color: #8FB28F;">(</span><span style="color: #F0DFAF; font-weight: bold;">if</span> <span style="color: #6CA0A3;">(</span>bound-and-true-p visual-line-mode<span style="color: #6CA0A3;">)</span>
+                        <span style="color: #6CA0A3;">(</span><span style="color: #F0DFAF; font-weight: bold;">save-excursion</span>
+                          <span style="color: #DCDCCC;">(</span>end-of-visual-line<span style="color: #DCDCCC;">)</span>
+                          <span style="color: #DCDCCC;">(</span>point<span style="color: #DCDCCC;">)</span><span style="color: #6CA0A3;">)</span>
+                      <span style="color: #6CA0A3;">(</span>line-end-position<span style="color: #6CA0A3;">)</span><span style="color: #8FB28F;">)</span><span style="color: #E0CF9F;">)</span>
+               <span style="color: #E0CF9F;">(</span>len-and-str <span style="color: #8FB28F;">(</span>avy--update-offset-and-str len str lep<span style="color: #8FB28F;">)</span><span style="color: #E0CF9F;">)</span><span style="color: #94BFF3;">)</span>
+          <span style="color: #94BFF3;">(</span>setq len <span style="color: #E0CF9F;">(</span>car len-and-str<span style="color: #E0CF9F;">)</span><span style="color: #94BFF3;">)</span>
+          <span style="color: #94BFF3;">(</span>setq str <span style="color: #E0CF9F;">(</span>cdr len-and-str<span style="color: #E0CF9F;">)</span><span style="color: #94BFF3;">)</span>
+          <span style="color: #94BFF3;">(</span>setq end <span style="color: #E0CF9F;">(</span><span style="color: #F0DFAF; font-weight: bold;">if</span> <span style="color: #8FB28F;">(</span>= beg lep<span style="color: #8FB28F;">)</span>
+                        <span style="color: #8FB28F;">(</span>1+ beg<span style="color: #8FB28F;">)</span>
+                      <span style="color: #8FB28F;">(</span>min <span style="color: #6CA0A3;">(</span>+ beg
+                              <span style="color: #DCDCCC;">(</span><span style="color: #F0DFAF; font-weight: bold;">if</span> <span style="color: #BFEBBF;">(</span>eq <span style="color: #D0BF8F;">(</span>char-after<span style="color: #D0BF8F;">)</span> ?\t<span style="color: #BFEBBF;">)</span>
+                                  <span style="color: #BFEBBF;">1</span>
+                                len<span style="color: #DCDCCC;">)</span><span style="color: #6CA0A3;">)</span>
+                           lep<span style="color: #8FB28F;">)</span><span style="color: #E0CF9F;">)</span><span style="color: #94BFF3;">)</span>
+          <span style="color: #94BFF3;">(</span><span style="color: #F0DFAF; font-weight: bold;">when</span> <span style="color: #E0CF9F;">(</span>and <span style="color: #8FB28F;">(</span>bound-and-true-p visual-line-mode<span style="color: #8FB28F;">)</span>
+                     <span style="color: #8FB28F;">(</span>&gt; len <span style="color: #6CA0A3;">(</span>- end beg<span style="color: #6CA0A3;">)</span><span style="color: #8FB28F;">)</span><span style="color: #E0CF9F;">)</span>
+            <span style="color: #E0CF9F;">(</span>setq len <span style="color: #8FB28F;">(</span>- end beg<span style="color: #8FB28F;">)</span><span style="color: #E0CF9F;">)</span>
+            <span style="color: #E0CF9F;">(</span><span style="color: #F0DFAF; font-weight: bold;">let</span> <span style="color: #8FB28F;">(</span><span style="color: #6CA0A3;">(</span>old-str <span style="color: #DCDCCC;">(</span>apply #'string <span style="color: #BFEBBF;">(</span>reverse path<span style="color: #BFEBBF;">)</span><span style="color: #DCDCCC;">)</span><span style="color: #6CA0A3;">)</span><span style="color: #8FB28F;">)</span>
+              <span style="color: #8FB28F;">(</span>setq str
+                    <span style="color: #6CA0A3;">(</span>substring
+                     <span style="color: #DCDCCC;">(</span>propertize
+                      old-str
+                      'face
+                      <span style="color: #BFEBBF;">(</span><span style="color: #F0DFAF; font-weight: bold;">if</span> <span style="color: #D0BF8F;">(</span>= <span style="color: #93E0E3;">(</span>length old-str<span style="color: #93E0E3;">)</span> <span style="color: #BFEBBF;">1</span><span style="color: #D0BF8F;">)</span>
+                          'avy-lead-face
+                        'avy-lead-face-0<span style="color: #BFEBBF;">)</span><span style="color: #DCDCCC;">)</span>
+                     <span style="color: #BFEBBF;">0</span> len<span style="color: #6CA0A3;">)</span><span style="color: #8FB28F;">)</span><span style="color: #E0CF9F;">)</span><span style="color: #94BFF3;">)</span><span style="color: #9FC59F;">)</span><span style="color: #93E0E3;">)</span><span style="color: #D0BF8F;">)</span>
+    <span style="color: #D0BF8F;">(</span>avy--overlay
+     str beg end wnd
+     <span style="color: #93E0E3;">(</span><span style="color: #F0DFAF; font-weight: bold;">lambda</span> <span style="color: #9FC59F;">(</span>str old-str<span style="color: #9FC59F;">)</span>
+       <span style="color: #9FC59F;">(</span><span style="color: #F0DFAF; font-weight: bold;">cond</span> <span style="color: #94BFF3;">(</span><span style="color: #E0CF9F;">(</span>string= old-str <span style="color: #CC9393;">"\n"</span><span style="color: #E0CF9F;">)</span>
+              <span style="color: #E0CF9F;">(</span>concat str <span style="color: #CC9393;">"\n"</span><span style="color: #E0CF9F;">)</span><span style="color: #94BFF3;">)</span>
+             <span style="color: #94BFF3;">(</span><span style="color: #E0CF9F;">(</span>string= old-str <span style="color: #CC9393;">"\t"</span><span style="color: #E0CF9F;">)</span>
+              <span style="color: #E0CF9F;">(</span>concat str <span style="color: #8FB28F;">(</span>make-string <span style="color: #6CA0A3;">(</span>max <span style="color: #DCDCCC;">(</span>- tab-width len<span style="color: #DCDCCC;">)</span> <span style="color: #BFEBBF;">0</span><span style="color: #6CA0A3;">)</span> ?\ <span style="color: #8FB28F;">)</span><span style="color: #E0CF9F;">)</span><span style="color: #94BFF3;">)</span>
+             <span style="color: #94BFF3;">(</span>t
+              <span style="color: #5F7F5F;">;; </span><span style="color: #7F9F7F;">add padding for wide-width character</span>
+              <span style="color: #E0CF9F;">(</span><span style="color: #F0DFAF; font-weight: bold;">if</span> <span style="color: #8FB28F;">(</span>eq <span style="color: #6CA0A3;">(</span>string-width old-str<span style="color: #6CA0A3;">)</span> <span style="color: #BFEBBF;">2</span><span style="color: #8FB28F;">)</span>
+                  <span style="color: #8FB28F;">(</span>concat str <span style="color: #CC9393;">" "</span><span style="color: #8FB28F;">)</span>
+                str<span style="color: #E0CF9F;">)</span><span style="color: #94BFF3;">)</span><span style="color: #9FC59F;">)</span><span style="color: #93E0E3;">)</span><span style="color: #D0BF8F;">)</span><span style="color: #BFEBBF;">)</span><span style="color: #DCDCCC;">)</span>
+</pre>
+</div>
+
+    </div>
+</div>
+
+        <div>
+        <div class="post-meta">
+            <span title="post date" class="post-info">2016-05-01</span>
+            <span title="last modification date" class="post-info">2016-05-01</span>
+            <span title="tags" class="post-info"><a href="/tags/emacs/">Emacs</a>, <a href="/tags/emacs-lisp/">emacs-lisp</a>, <a href="/tags/avy/">avy</a></span>
+            <span title="author" class="post-info">David Zuber</span>
+        </div>
+        <section>
+            <h1>Comments</h1>
+                <div id="disqus_thread"></div>
+                <script type="text/javascript">
+                 //var disqus_developer = 1;
+                 var disqus_identifier = "/blog/2016/05/01/consistent-avy-colors";
+                 var disqus_url = "https://storax.github.io/blog/2016/05/01/consistent-avy-colors";
+                 var disqus_shortname = 'storaxgithubio';
+                 /* * * DON'T EDIT BELOW THIS LINE * * */
+                 (function() {
+                     var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+                     dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+                     (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+                 })();
+                </script>
+                <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+                <a href="//disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+        </section>
+    <script src="//code.jquery.com/jquery-latest.min.js"></script>
+    <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <div class="footer">
+        <p>Generated by <a href="http://www.gnu.org/software/emacs/">Emacs</a> 24.x (<a href="http://orgmode.org">Org mode</a> 8.x)</p>
+        <p>
+            Copyright &copy; 2012 - <span id="footerYear"></span> <a href="mailto:zuber &lt;dot&gt; david &lt;at&gt; gmx &lt;dot&gt; de">David Zuber</a>
+            &nbsp;&nbsp;-&nbsp;&nbsp;
+            Powered by <a href="https://github.com/kelvinh/org-page" target="_blank">org-page</a>
+            <script type="text/javascript">document.getElementById("footerYear").innerHTML = (new Date()).getFullYear();</script>
+        </p>
+    </div>
+</div>
+
+    </body>
+</html>
