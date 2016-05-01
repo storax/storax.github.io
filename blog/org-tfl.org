@@ -75,7 +75,9 @@ Combining the =rooturl= with a =file= from the =camera= will get you a link like
 https://tfl.gov.uk/tfl/livetravelnews/trafficcams/cctv/00001.01251.jpg
 #+END_EXAMPLE
 
-Enter it in your browser to receive the latest image from that traffic camera.
+#+CAPTION: Live traffic camera footage
+#+ATTR_HTML: :alt traffic cam footage :title traffic cam
+[[https://tfl.gov.uk/tfl/livetravelnews/trafficcams/cctv/00001.01251.jpg]]
 
 There is a nice interactive [[https://api.tfl.gov.uk/][API explorer site]]. What I needed was the [[https://api.tfl.gov.uk/#Journey][journey planner API]].
 There are a lot of parameters but what you essentially need is something like this:
