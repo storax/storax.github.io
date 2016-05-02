@@ -1,0 +1,106 @@
+#+TITLE:       Org capture tricks
+#+AUTHOR:      David Zuber
+#+EMAIL:       zuber.david@gmx.de
+#+DATE:        2016-05-02 Mo
+#+URI:         /blog/%y/%m/%d/org-capture-tricks
+#+KEYWORDS:    Emacs, emacs-lisp, org, org-capture
+#+TAGS:        :Emacs:emacs-lisp:org:org-capture:
+#+LANGUAGE:    en
+#+OPTIONS:     H:6 num:nil toc:nil \n:nil ::t |:t ^:nil -:nil f:t *:t <:t
+#+DESCRIPTION: Handy tricks for org capture templates.
+
+I recently started to use quite big org capture templates at work.
+They describe my usual workflow for a complete ticket (triage, implementation, code review, deploy).
+To make the capturing more efficient, I came up with three helpfull functions:
+
+* Use user input in several locations
+Org capture templates can prompt for user input, but then only insert it at one location.
+This is quite limiting. The template I created asked for a JIRA ticket number and I wanted to
+use it throughout my template without prompting for the same thing again.
+
+But org capture allows for custom lisp expressions.
+So I wrote a function that will prompt the user for a string, save it to a buffer local
+variable and return it (so it is inserted at the first location).
+#+BEGIN_SRC emacs-lisp
+(defvar oc-capture-prmt-history nil
+  "History of prompt answers for org capture.")
+(defun oc/prmt (prompt variable)
+  "PROMPT for string, save it to VARIABLE and insert it."
+  (make-local-variable variable)
+  (set variable (read-string (concat prompt ": ") nil oc-capture-prmt-history)))
+#+END_SRC
+
+Then I use another function to insert that stored string elsewhere.
+#+BEGIN_SRC emacs-lisp
+(defun oc/ins (variable)
+  "Insert content of VARIABLE."
+  (symbol-value variable))
+#+END_SRC
+
+So let's say I have a capture template like this:
+#+BEGIN_SRC org
+  * JIRA Ticket %(oc/prmt "JIRA Project" 'jr-prj)-%(oc/prmt "JIRA Ticket No." 'jr-no)
+  For project %(oc/ins 'jr-prj) I have to do the following stuff:
+  ** Triage %(oc/ins 'jr-prj)-%(oc/ins 'jr-no)
+  Do the triage.
+  ** Implement %(oc/ins 'jr-prj)-%(oc/ins 'jr-no)
+  Implement stuff
+  - [ ] Tests pass?
+#+END_SRC
+It has two calls to =oc/prmt= in the first heading and several calls to =oc/ins= afterwards.
+
+Orc capture will first prompt for the JIRA project:
+[[file:org-capture-jira-prj-prmt.png]]
+
+Then for the ticket number:
+[[file:org-capture-jira-no.png]]
+
+Afterwards everywhere I use =oc/ins=, the stored text is inserted:
+[[file:org-capture-prmt-finish.png]]
+
+* Conditionally insert text
+Sometimes I don't need a triage or an implementation for a ticket.
+So it would be nice to have org-capture ask whether I want to include a section.
+
+The function is very minimal:
+#+BEGIN_SRC emacs-lisp
+(defun oc/inc (what text)
+  "Ask user to include WHAT.  If user agrees return TEXT."
+  (when (y-or-n-p (concat "Include " what "?"))
+    text))
+#+END_SRC
+
+The capture template starts to look a little bit ugly:
+#+BEGIN_SRC org
+  * JIRA Ticket %(oc/prmt "JIRA Project" 'jr-prj)-%(oc/prmt "JIRA Ticket No." 'jr-no)
+  For project %(oc/ins 'jr-prj) I have to do the following stuff:
+  %(oc/inc "triage" (format
+   "** Triage %s-%s
+  Do the triage."
+   jr-prj jr-no))
+  %(oc/inc "implementation" (format
+   "** Implement %s-%s
+  Implement stuff
+  - [ ] Tests pass?"
+   jr-prj jr-no))
+#+END_SRC
+
+So after getting prompted for the project and ticket number,
+org-capture will ask whether to include the triage:
+[[file:org-capture-include-triage.png]]
+
+Then for the implementation. You can see that the triage text already
+got inserted:
+[[file:org-capture-include-implementation.png]]
+
+The fully expanded template looks like this:
+[[file:org-capture-include-all.png]]
+
+If you decide not to include a section, a blank line
+remains:
+[[file:org-capture-include-one.png]]
+You could fix that by putting all the include statements in one line
+and add a newline at the end of the text but that would look very ugly.
+Unfortunately it's not easy to work around that.
+
+Let me know if you find this useful or have other ideas for org capture templates.
