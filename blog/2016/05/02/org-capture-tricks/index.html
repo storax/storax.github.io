@@ -34,20 +34,21 @@
         <p>
 I recently started to use quite big org capture templates at work.
 They describe my usual workflow for a complete ticket (triage, implementation, code review, deploy).
-To make the capturing more efficient, I came up with three helpfull functions:
+To make the capturing more efficient, I came up with three helpful functions:
 </p>
 
 <div id="outline-container-orgheadline1" class="outline-2">
 <h2 id="orgheadline1">Use user input in several locations</h2>
 <div class="outline-text-2" id="text-orgheadline1">
 <p>
-Org capture templates can prompt for user input, but then only insert it at one location.
+Org capture templates can prompt for user input, but then only inserts it at one location.
 This is quite limiting. The template I created asked for a JIRA ticket number and I wanted to
 use it throughout my template without prompting for the same thing again.
 </p>
 
 <p>
-But org capture allows for custom lisp expressions.
+But org capture supports custom lisp expressions. That's like allowing cheat codes.
+Super powerful.
 So I wrote a function that will prompt the user for a string, save it to a buffer local
 variable and return it (so it is inserted at the first location).
 </p>
