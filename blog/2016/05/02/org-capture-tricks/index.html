@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en-us">
+    <head>
+    <title>Org capture tricks - Storax</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="David Zuber" />
+        <meta name="description" content="Handy tricks for org capture templates." />
+        <meta name="keywords" content="Emacs, emacs-lisp, org, org-capture" />
+    <link rel="stylesheet" href="/media/css/main.css" type="text/css">
+</head>
+
+    <body class="container">
+        <div>
+    <header class="masthead">
+        <h1 class="masthead-title"><a href="/">Storax</a></h1>
+        <p>Eat sleep code repeat! Soon to be a major emacs mode.</p>
+        <ul>
+                <li><a href="/blog/">Blog</a></li>
+            <li><a href="/tags/">Tags</a></li>
+            <li><a href="/about/">About</a></li>
+            <li><a href="https://github.com/storax">GitHub</a></li>
+            <li><a href="/rss.xml">RSS</a></li>
+        </ul>
+        <form method="get" id="searchform" action="//www.google.com/search">
+            <input type="text" class="field" name="q" id="s" placeholder="Search">
+            <input type="hidden" name="as_sitesearch" value="storax.github.io">
+        </form>
+    </header>
+</div>
+
+        <div>
+    <div class="post">
+            <h1>Org capture tricks</h1>
+        <p>
+I recently started to use quite big org capture templates at work.
+They describe my usual workflow for a complete ticket (triage, implementation, code review, deploy).
+To make the capturing more efficient, I came up with three helpfull functions:
+</p>
+
+<div id="outline-container-orgheadline1" class="outline-2">
+<h2 id="orgheadline1">Use user input in several locations</h2>
+<div class="outline-text-2" id="text-orgheadline1">
+<p>
+Org capture templates can prompt for user input, but then only insert it at one location.
+This is quite limiting. The template I created asked for a JIRA ticket number and I wanted to
+use it throughout my template without prompting for the same thing again.
+</p>
+
+<p>
+But org capture allows for custom lisp expressions.
+So I wrote a function that will prompt the user for a string, save it to a buffer local
+variable and return it (so it is inserted at the first location).
+</p>
+<div class="org-src-container">
+
+<pre class="src src-emacs-lisp"><span style="color: #DCDCCC;">(</span><span style="color: #F0DFAF; font-weight: bold;">defvar</span> <span style="color: #DFAF8F;">oc-capture-prmt-history</span> nil
+  <span style="color: #9FC59F;">"History of prompt answers for org capture."</span><span style="color: #DCDCCC;">)</span>
+<span style="color: #DCDCCC;">(</span><span style="color: #F0DFAF; font-weight: bold;">defun</span> <span style="color: #93E0E3;">oc/prmt</span> <span style="color: #BFEBBF;">(</span>prompt variable<span style="color: #BFEBBF;">)</span>
+  <span style="color: #9FC59F;">"PROMPT for string, save it to VARIABLE and insert it."</span>
+  <span style="color: #BFEBBF;">(</span>make-local-variable variable<span style="color: #BFEBBF;">)</span>
+  <span style="color: #BFEBBF;">(</span>set variable <span style="color: #D0BF8F;">(</span>read-string <span style="color: #93E0E3;">(</span>concat prompt <span style="color: #CC9393;">": "</span><span style="color: #93E0E3;">)</span> nil oc-capture-prmt-history<span style="color: #D0BF8F;">)</span><span style="color: #BFEBBF;">)</span><span style="color: #DCDCCC;">)</span>
+</pre>
+</div>
+
+<p>
+Then I use another function to insert that stored string elsewhere.
+</p>
+<div class="org-src-container">
+
+<pre class="src src-emacs-lisp"><span style="color: #DCDCCC;">(</span><span style="color: #F0DFAF; font-weight: bold;">defun</span> <span style="color: #93E0E3;">oc/ins</span> <span style="color: #BFEBBF;">(</span>variable<span style="color: #BFEBBF;">)</span>
+  <span style="color: #9FC59F;">"Insert content of VARIABLE."</span>
+  <span style="color: #BFEBBF;">(</span>symbol-value variable<span style="color: #BFEBBF;">)</span><span style="color: #DCDCCC;">)</span>
+</pre>
+</div>
+
+<p>
+So let's say I have a capture template like this:
+</p>
+<div class="org-src-container">
+
+<pre class="src src-org"><span style="color: #DFAF8F;">* JIRA Ticket %(oc/prmt "JIRA Project" 'jr-prj)-%(oc/prmt "JIRA Ticket No." 'jr-no)</span>
+For project %(oc/ins 'jr-prj) I have to do the following stuff:
+<span style="color: #3F3F3F;">*</span><span style="color: #BFEBBF;">* Triage %(oc/ins 'jr-prj)-%(oc/ins 'jr-no)</span>
+Do the triage.
+<span style="color: #3F3F3F;">*</span><span style="color: #BFEBBF;">* Implement %(oc/ins 'jr-prj)-%(oc/ins 'jr-no)</span>
+Implement stuff
+- <span style="color: #FFFFEF; background-color: #5F5F5F;">[ ]</span> Tests pass?
+</pre>
+</div>
+<p>
+It has two calls to <code>oc/prmt</code> in the first heading and several calls to <code>oc/ins</code> afterwards.
+</p>
+
+<p>
+Orc capture will first prompt for the JIRA project:
+<img src="/assets/blog/2016/05/02/org-capture-tricks/org-capture-jira-prj-prmt.png" alt="/assets/blog/2016/05/02/org-capture-tricks/org-capture-jira-prj-prmt.png" />
+</p>
+
+<p>
+Then for the ticket number:
+<img src="/assets/blog/2016/05/02/org-capture-tricks/org-capture-jira-no.png" alt="/assets/blog/2016/05/02/org-capture-tricks/org-capture-jira-no.png" />
+</p>
+
+<p>
+Afterwards everywhere I use <code>oc/ins</code>, the stored text is inserted:
+<img src="/assets/blog/2016/05/02/org-capture-tricks/org-capture-prmt-finish.png" alt="/assets/blog/2016/05/02/org-capture-tricks/org-capture-prmt-finish.png" />
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgheadline2" class="outline-2">
+<h2 id="orgheadline2">Conditionally insert text</h2>
+<div class="outline-text-2" id="text-orgheadline2">
+<p>
+Sometimes I don't need a triage or an implementation for a ticket.
+So it would be nice to have org-capture ask whether I want to include a section.
+</p>
+
+<p>
+The function is very minimal:
+</p>
+<div class="org-src-container">
+
+<pre class="src src-emacs-lisp"><span style="color: #DCDCCC;">(</span><span style="color: #F0DFAF; font-weight: bold;">defun</span> <span style="color: #93E0E3;">oc/inc</span> <span style="color: #BFEBBF;">(</span>what text<span style="color: #BFEBBF;">)</span>
+  <span style="color: #9FC59F;">"Ask user to include WHAT.  If user agrees return TEXT."</span>
+  <span style="color: #BFEBBF;">(</span><span style="color: #F0DFAF; font-weight: bold;">when</span> <span style="color: #D0BF8F;">(</span>y-or-n-p <span style="color: #93E0E3;">(</span>concat <span style="color: #CC9393;">"Include "</span> what <span style="color: #CC9393;">"?"</span><span style="color: #93E0E3;">)</span><span style="color: #D0BF8F;">)</span>
+    text<span style="color: #BFEBBF;">)</span><span style="color: #DCDCCC;">)</span>
+</pre>
+</div>
+
+<p>
+The capture template starts to look a little bit ugly:
+</p>
+<div class="org-src-container">
+
+<pre class="src src-org"><span style="color: #DFAF8F;">* JIRA Ticket %(oc/prmt "JIRA Project" 'jr-prj)-%(oc/prmt "JIRA Ticket No." 'jr-no)</span>
+For project %(oc/ins 'jr-prj) I have to do the following stuff:
+%(oc/inc "triage" (format
+ "** Triage %s-%s
+Do the triage."
+ jr-prj jr-no))
+%(oc/inc "implementation" (format
+ "** Implement %s-%s
+Implement stuff
+- <span style="color: #FFFFEF; background-color: #5F5F5F;">[ ]</span> Tests pass?"
+ jr-prj jr-no))
+</pre>
+</div>
+
+<p>
+So after getting prompted for the project and ticket number,
+org-capture will ask whether to include the triage:
+<img src="/assets/blog/2016/05/02/org-capture-tricks/org-capture-include-triage.png" alt="/assets/blog/2016/05/02/org-capture-tricks/org-capture-include-triage.png" />
+</p>
+
+<p>
+Then for the implementation. You can see that the triage text already
+got inserted:
+<img src="/assets/blog/2016/05/02/org-capture-tricks/org-capture-include-implementation.png" alt="/assets/blog/2016/05/02/org-capture-tricks/org-capture-include-implementation.png" />
+</p>
+
+<p>
+The fully expanded template looks like this:
+<img src="/assets/blog/2016/05/02/org-capture-tricks/org-capture-include-all.png" alt="/assets/blog/2016/05/02/org-capture-tricks/org-capture-include-all.png" />
+</p>
+
+<p>
+If you decide not to include a section, a blank line
+remains:
+<img src="/assets/blog/2016/05/02/org-capture-tricks/org-capture-include-one.png" alt="/assets/blog/2016/05/02/org-capture-tricks/org-capture-include-one.png" />
+You could fix that by putting all the include statements in one line
+and add a newline at the end of the text but that would look very ugly.
+Unfortunately it's not easy to work around that.
+</p>
+
+<p>
+Let me know if you find this useful or have other ideas for org capture templates.
+</p>
+</div>
+</div>
+
+    </div>
+</div>
+
+        <div>
+        <div class="post-meta">
+            <span title="post date" class="post-info">2016-05-02</span>
+            <span title="last modification date" class="post-info">2016-05-02</span>
+            <span title="tags" class="post-info"><a href="/tags/emacs/">Emacs</a>, <a href="/tags/emacs-lisp/">emacs-lisp</a>, <a href="/tags/org/">org</a>, <a href="/tags/org-capture/">org-capture</a></span>
+            <span title="author" class="post-info">David Zuber</span>
+        </div>
+        <section>
+            <h1>Comments</h1>
+                <div id="disqus_thread"></div>
+                <script type="text/javascript">
+                 //var disqus_developer = 1;
+                 var disqus_identifier = "/blog/2016/05/02/org-capture-tricks";
+                 var disqus_url = "https://storax.github.io/blog/2016/05/02/org-capture-tricks";
+                 var disqus_shortname = 'storaxgithubio';
+                 /* * * DON'T EDIT BELOW THIS LINE * * */
+                 (function() {
+                     var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+                     dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+                     (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+                 })();
+                </script>
+                <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+                <a href="//disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+        </section>
+    <script src="//code.jquery.com/jquery-latest.min.js"></script>
+    <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <div class="footer">
+        <p>Generated by <a href="http://www.gnu.org/software/emacs/">Emacs</a> 24.x (<a href="http://orgmode.org">Org mode</a> 8.x)</p>
+        <p>
+            Copyright &copy; 2012 - <span id="footerYear"></span> <a href="mailto:zuber &lt;dot&gt; david &lt;at&gt; gmx &lt;dot&gt; de">David Zuber</a>
+            &nbsp;&nbsp;-&nbsp;&nbsp;
+            Powered by <a href="https://github.com/kelvinh/org-page" target="_blank">org-page</a>
+            <script type="text/javascript">document.getElementById("footerYear").innerHTML = (new Date()).getFullYear();</script>
+        </p>
+    </div>
+</div>
+
+    </body>
+</html>

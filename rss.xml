@@ -4,10 +4,17 @@
     <title>Storax</title>
     <link>https://storax.github.io/</link>
     <description>Eat sleep code repeat! Soon to be a major emacs mode.</description>
-    <pubDate>So, 01 Mai 2016 22:48:07 BST</pubDate>
-    <lastBuildDate>So, 01 Mai 2016 22:48:07 BST</lastBuildDate>
+    <pubDate>Mo, 02 Mai 2016 14:50:40 BST</pubDate>
+    <lastBuildDate>Mo, 02 Mai 2016 14:50:40 BST</lastBuildDate>
     <docs>http://www.rssboard.org/rss-specification</docs>
     <generator>Org-page static site generator (https://github.com/kelvinh/org-page)</generator>
+    <item>
+      <title>Org capture tricks</title>
+      <link>https://storax.github.io/blog/2016/05/02/org-capture-tricks</link>
+      <description><![CDATA[Handy tricks for org capture templates.]]></description>
+      <pubDate>2016-05-02</pubDate>
+      <guid>https://storax.github.io/blog/2016/05/02/org-capture-tricks</guid>
+    </item>
     <item>
       <title>Consistent avy colors</title>
       <link>https://storax.github.io/blog/2016/05/01/consistent-avy-colors</link>
