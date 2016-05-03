@@ -4,10 +4,17 @@
     <title>Storax</title>
     <link>https://storax.github.io/</link>
     <description>Eat sleep code repeat! Soon to be a major emacs mode.</description>
-    <pubDate>Mo, 02 Mai 2016 14:57:50 BST</pubDate>
-    <lastBuildDate>Mo, 02 Mai 2016 14:57:50 BST</lastBuildDate>
+    <pubDate>Di, 03 Mai 2016 01:56:27 BST</pubDate>
+    <lastBuildDate>Di, 03 Mai 2016 01:56:27 BST</lastBuildDate>
     <docs>http://www.rssboard.org/rss-specification</docs>
     <generator>Org-page static site generator (https://github.com/kelvinh/org-page)</generator>
+    <item>
+      <title>Fast search directory access</title>
+      <link>https://storax.github.io/blog/2016/05/03/fast-search-directory-access</link>
+      <description><![CDATA[Procedurally generate keybindings to search in directories.]]></description>
+      <pubDate>2016-05-03</pubDate>
+      <guid>https://storax.github.io/blog/2016/05/03/fast-search-directory-access</guid>
+    </item>
     <item>
       <title>Consistent avy colors</title>
       <link>https://storax.github.io/blog/2016/05/01/consistent-avy-colors</link>

@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en-us">
+    <head>
+    <title>Fast search directory access - Storax</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="David Zuber" />
+        <meta name="description" content="Procedurally generate keybindings to search in directories." />
+        <meta name="keywords" content="Emacs, emacs-lisp, helm, helm-ag" />
+    <link rel="stylesheet" href="/media/css/main.css" type="text/css">
+</head>
+
+    <body class="container">
+        <div>
+    <header class="masthead">
+        <h1 class="masthead-title"><a href="/">Storax</a></h1>
+        <p>Eat sleep code repeat! Soon to be a major emacs mode.</p>
+        <ul>
+                <li><a href="/blog/">Blog</a></li>
+            <li><a href="/tags/">Tags</a></li>
+            <li><a href="/about/">About</a></li>
+            <li><a href="https://github.com/storax">GitHub</a></li>
+            <li><a href="/rss.xml">RSS</a></li>
+        </ul>
+        <form method="get" id="searchform" action="//www.google.com/search">
+            <input type="text" class="field" name="q" id="s" placeholder="Search">
+            <input type="hidden" name="as_sitesearch" value="storax.github.io">
+        </form>
+    </header>
+</div>
+
+        <div>
+    <div class="post">
+            <h1>Fast search directory access</h1>
+        <p>
+I don't know whether this is cool or totally stupid.
+It's 1am so I'm almost at the end of the "eat sleep code repeat" cycle.
+I was on my way to bed when I had an idea for making searching a microsecond faster.
+</p>
+
+<p>
+I use <a href="https://github.com/syohex/emacs-helm-ag">helm-ag</a> a lot to search stuff in my projects.
+Spacemacs also comes with a handy search in current project function.
+The thing is, that I'm often not in the right buffer for that or I want to search
+in another project.
+I found that there are a couple of directories I frequently search.
+It's not so hard to create functions for each directory but that's cumbersome.
+So here is my plan:
+</p>
+
+<blockquote>
+<p>
+Generate a bunch of keybindings to a list of directories to search in.
+</p>
+</blockquote>
+
+<p>
+First we need a mapping of keys to directories.
+Also a prefix for the keybinding might be a good idea:
+</p>
+<div class="org-src-container">
+
+<pre class="src src-emacs-lisp"><span style="color: #DCDCCC;">(</span><span style="color: #F0DFAF; font-weight: bold;">defvar</span> <span style="color: #DFAF8F;">helm-ag-in-dir-prefix</span> <span style="color: #CC9393;">"sa SPC "</span>
+  <span style="color: #9FC59F;">"Prefix for all keybindings of `</span><span style="color: #BFEBBF;">helm-ag-in-dir-alist</span><span style="color: #9FC59F;">'"</span><span style="color: #DCDCCC;">)</span>
+<span style="color: #DCDCCC;">(</span><span style="color: #F0DFAF; font-weight: bold;">defvar</span> <span style="color: #DFAF8F;">helm-ag-in-dir-alist</span> '<span style="color: #BFEBBF;">(</span><span style="color: #D0BF8F;">(</span><span style="color: #CC9393;">"e"</span> . <span style="color: #CC9393;">"~/projects/emaci"</span><span style="color: #D0BF8F;">)</span>
+                                <span style="color: #D0BF8F;">(</span><span style="color: #CC9393;">"o"</span> . <span style="color: #CC9393;">"~/Documents/org"</span><span style="color: #D0BF8F;">)</span><span style="color: #BFEBBF;">)</span>
+  <span style="color: #9FC59F;">"Mapping of keys to directories for fast search access with `</span><span style="color: #BFEBBF;">helm-ag-in-dir</span><span style="color: #9FC59F;">'."</span><span style="color: #DCDCCC;">)</span>
+</pre>
+</div>
+
+<p>
+Ok, so far so easy.
+Let's define a function that loops over all entries and creates a function and a keybinding.
+Here is the basic loop:
+</p>
+<div class="org-src-container">
+
+<pre class="src src-emacs-lisp"><span style="color: #DCDCCC;">(</span><span style="color: #F0DFAF; font-weight: bold;">defun</span> <span style="color: #93E0E3;">create-helm-ag-in-dir-bindings</span> <span style="color: #BFEBBF;">(</span>dir-alist<span style="color: #BFEBBF;">)</span>
+  <span style="color: #9FC59F;">"Create keybindings for searching dirs with `</span><span style="color: #BFEBBF;">helm-ag</span><span style="color: #9FC59F;">'.</span>
+
+<span style="color: #9FC59F;">The given DIR-ALIST should map keybindings to directories.</span>
+<span style="color: #9FC59F;">All keybindings are prepended with `</span><span style="color: #BFEBBF;">helm-ag-in-dir-prefix</span><span style="color: #9FC59F;">'"</span>
+  <span style="color: #BFEBBF;">(</span><span style="color: #F0DFAF; font-weight: bold;">dolist</span> <span style="color: #D0BF8F;">(</span>keydir dir-alist<span style="color: #D0BF8F;">)</span>
+    <span style="color: #D0BF8F;">(</span><span style="color: #F0DFAF; font-weight: bold;">let*</span> <span style="color: #93E0E3;">(</span><span style="color: #9FC59F;">(</span>key <span style="color: #94BFF3;">(</span>car keydir<span style="color: #94BFF3;">)</span><span style="color: #9FC59F;">)</span>
+           <span style="color: #9FC59F;">(</span>dir <span style="color: #94BFF3;">(</span>cdr keydir<span style="color: #94BFF3;">)</span><span style="color: #9FC59F;">)</span>
+           <span style="color: #9FC59F;">(</span>keychord <span style="color: #94BFF3;">(</span>concat helm-ag-in-dir-prefix key<span style="color: #94BFF3;">)</span><span style="color: #9FC59F;">)</span><span style="color: #93E0E3;">)</span>
+      ...<span style="color: #D0BF8F;">)</span><span style="color: #BFEBBF;">)</span><span style="color: #DCDCCC;">)</span>
+</pre>
+</div>
+
+<p>
+But how do we create functions on the fly?
+Well, there is <code>lambda</code> or <code>defun</code>.
+<code>lambda</code> is very easy to use but if you assign it to a keybinding
+<a href="https://github.com/justbur/emacs-which-key">which-key</a> will only display <code>lambda</code> in the interface.
+That's not really descriptive.
+We need to assign a name to that lambda.
+<code>defun</code> does that, but we can also work around that.
+Here is how you define a lambda:
+</p>
+<div class="org-src-container">
+
+<pre class="src src-emacs-lisp"><span style="color: #DCDCCC;">(</span><span style="color: #F0DFAF; font-weight: bold;">lambda</span> <span style="color: #BFEBBF;">()</span> <span style="color: #9FC59F;">"docstring"</span> <span style="color: #BFEBBF;">(</span>interactive<span style="color: #BFEBBF;">)</span> <span style="color: #BFEBBF;">(</span>message <span style="color: #CC9393;">"cool lambda"</span><span style="color: #BFEBBF;">)</span><span style="color: #DCDCCC;">)</span>
+</pre>
+</div>
+<p>
+This will return a cons cell or a <a href="https://www.gnu.org/software/emacs/manual/html_node/elisp/Function-Cells.html">function cell</a>.
+The <code>car</code> is <code>lambda</code> and the <code>cdr</code> is <code>(nil "docstring" (interactive) (message "cool lambda"))</code>.
+What we need is a new symbol, which will act as the name and then assign it.
+To create a symbol we can use <code>make-symbol</code>. The function takes a string which we can construct
+from the directory.
+</p>
+
+<p>
+To reliably get the leaf directory I use:
+</p>
+<div class="org-src-container">
+
+<pre class="src src-emacs-lisp"><span style="color: #DCDCCC;">(</span>file-name-base <span style="color: #BFEBBF;">(</span>directory-file-name dir<span style="color: #BFEBBF;">)</span><span style="color: #DCDCCC;">)</span>
+</pre>
+</div>
+<p>
+<code>directory-file-name</code> makes sure that <code>/path/directory</code> and <code>/path/directory/</code> both work.
+</p>
+
+<p>
+Another thing to keep in mind is that when we create the lambda,
+we have to keep the scope of variables in mind.
+This will fail:
+</p>
+<div class="org-src-container">
+
+<pre class="src src-emacs-lisp"><span style="color: #DCDCCC;">(</span>setq mylambda
+      <span style="color: #BFEBBF;">(</span><span style="color: #F0DFAF; font-weight: bold;">let</span> <span style="color: #D0BF8F;">(</span><span style="color: #93E0E3;">(</span>foo <span style="color: #CC9393;">"foobar"</span><span style="color: #93E0E3;">)</span><span style="color: #D0BF8F;">)</span>
+        <span style="color: #D0BF8F;">(</span><span style="color: #F0DFAF; font-weight: bold;">lambda</span> <span style="color: #93E0E3;">()</span> <span style="color: #93E0E3;">(</span>message <span style="color: #CC9393;">"foo: %s"</span> foo<span style="color: #93E0E3;">)</span><span style="color: #D0BF8F;">)</span><span style="color: #BFEBBF;">)</span><span style="color: #DCDCCC;">)</span>
+<span style="color: #DCDCCC;">(</span>funcall mylambda<span style="color: #DCDCCC;">)</span>
+</pre>
+</div>
+<pre class="example">
+Symbol's value as variable is void: foo
+</pre>
+
+<p>
+Emacs lisp has a weird and powerful <a href="https://www.gnu.org/software/emacs/manual/html_node/elisp/Backquote.html">backquote</a> feature.
+You can quote something but selectively evaluate an expression:
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-emacs-lisp"><span style="color: #DCDCCC;">(</span>setq mylambda
+      <span style="color: #BFEBBF;">(</span><span style="color: #F0DFAF; font-weight: bold;">let</span> <span style="color: #D0BF8F;">(</span><span style="color: #93E0E3;">(</span>foo <span style="color: #CC9393;">"foobar"</span><span style="color: #93E0E3;">)</span><span style="color: #D0BF8F;">)</span>
+        `<span style="color: #D0BF8F;">(</span><span style="color: #F0DFAF; font-weight: bold;">lambda</span> <span style="color: #93E0E3;">()</span> <span style="color: #93E0E3;">(</span>message <span style="color: #CC9393;">"foo: %s"</span> ,foo<span style="color: #93E0E3;">)</span><span style="color: #D0BF8F;">)</span><span style="color: #BFEBBF;">)</span><span style="color: #DCDCCC;">)</span>
+<span style="color: #DCDCCC;">(</span>funcall mylambda<span style="color: #DCDCCC;">)</span>
+</pre>
+</div>
+<pre class="example">
+"foo: foobar"
+</pre>
+
+<p>
+Use a comma to evaluate an expression. Basically foo get's replaced with the value <code>foobar</code>.
+That's more like it.
+We can use <code>fset</code> to assign a lambda to another symbol.
+So putting it all together:
+</p>
+<div class="org-src-container">
+
+<pre class="src src-emacs-lisp"><span style="color: #DCDCCC;">(</span><span style="color: #F0DFAF; font-weight: bold;">defun</span> <span style="color: #93E0E3;">create-helm-ag-in-dir-bindings</span> <span style="color: #BFEBBF;">(</span>dir-alist<span style="color: #BFEBBF;">)</span>
+  <span style="color: #9FC59F;">"Create keybindings for searching dirs with `</span><span style="color: #BFEBBF;">helm-ag</span><span style="color: #9FC59F;">'.</span>
+
+<span style="color: #9FC59F;">The given DIR-ALIST should map keybindings to directories.</span>
+<span style="color: #9FC59F;">All keybindings are prepended with `</span><span style="color: #BFEBBF;">helm-ag-in-dir-prefix</span><span style="color: #9FC59F;">'"</span>
+  <span style="color: #BFEBBF;">(</span><span style="color: #F0DFAF; font-weight: bold;">dolist</span> <span style="color: #D0BF8F;">(</span>keydir dir-alist<span style="color: #D0BF8F;">)</span>
+    <span style="color: #D0BF8F;">(</span><span style="color: #F0DFAF; font-weight: bold;">let*</span> <span style="color: #93E0E3;">(</span><span style="color: #9FC59F;">(</span>key <span style="color: #94BFF3;">(</span>car keydir<span style="color: #94BFF3;">)</span><span style="color: #9FC59F;">)</span>
+           <span style="color: #9FC59F;">(</span>dir <span style="color: #94BFF3;">(</span>cdr keydir<span style="color: #94BFF3;">)</span><span style="color: #9FC59F;">)</span>
+           <span style="color: #9FC59F;">(</span>keychord <span style="color: #94BFF3;">(</span>concat helm-ag-in-dir-prefix key<span style="color: #94BFF3;">)</span><span style="color: #9FC59F;">)</span>
+           <span style="color: #9FC59F;">(</span>symname <span style="color: #94BFF3;">(</span>concat <span style="color: #CC9393;">"storax-helm-ag-"</span> <span style="color: #E0CF9F;">(</span>file-name-base <span style="color: #8FB28F;">(</span>directory-file-name dir<span style="color: #8FB28F;">)</span><span style="color: #E0CF9F;">)</span><span style="color: #94BFF3;">)</span><span style="color: #9FC59F;">)</span>
+           <span style="color: #9FC59F;">(</span>sym <span style="color: #94BFF3;">(</span>make-symbol symname<span style="color: #94BFF3;">)</span><span style="color: #9FC59F;">)</span>
+           <span style="color: #9FC59F;">(</span>lf `<span style="color: #94BFF3;">(</span><span style="color: #F0DFAF; font-weight: bold;">lambda</span> <span style="color: #E0CF9F;">()</span>
+                  ,<span style="color: #E0CF9F;">(</span>concat <span style="color: #CC9393;">"Search in "</span> dir <span style="color: #CC9393;">" with `</span><span style="color: #BFEBBF;">helm-ag</span><span style="color: #CC9393;">'."</span><span style="color: #E0CF9F;">)</span>
+                  <span style="color: #E0CF9F;">(</span>interactive<span style="color: #E0CF9F;">)</span>
+                  <span style="color: #E0CF9F;">(</span>storax/helm-ag-in-dir ,dir<span style="color: #E0CF9F;">)</span><span style="color: #94BFF3;">)</span><span style="color: #9FC59F;">)</span><span style="color: #93E0E3;">)</span>
+      <span style="color: #93E0E3;">(</span>fset sym lf<span style="color: #93E0E3;">)</span>
+      <span style="color: #93E0E3;">(</span>spacemacs/set-leader-keys keychord sym<span style="color: #93E0E3;">)</span><span style="color: #D0BF8F;">)</span><span style="color: #BFEBBF;">)</span><span style="color: #DCDCCC;">)</span>
+</pre>
+</div>
+<p>
+We use the backquote construct to also create the docstring of the lambda procedurally.
+Btw, <code>let*</code> let's you reference variables in definitions below.
+</p>
+
+<p>
+Now we just have to call that function of ours:
+</p>
+<div class="org-src-container">
+
+<pre class="src src-emacs-lisp"><span style="color: #DCDCCC;">(</span>spacemacs/declare-prefix storax-helm-ag-dirs-prefix <span style="color: #CC9393;">"dir"</span> <span style="color: #CC9393;">"helm-ag in dir"</span><span style="color: #DCDCCC;">)</span>
+<span style="color: #DCDCCC;">(</span>storax/create-helm-ag-bindings storax-helm-ag-dirs-alist<span style="color: #DCDCCC;">)</span>
+</pre>
+</div>
+
+<p>
+If you don't use spacemacs, don't worry about the first line but you also have to replace
+<code>spacemacs/set-leader-keys</code> in our <code>create-helm-ag-in-dir-bindings</code> function with
+<code>gobal-set-key</code>.
+</p>
+
+
+<div class="figure">
+<p><img src="/assets/blog/2016/05/03/fast-search-directory-access/helm-ag-fast-which-key.png" alt="/assets/blog/2016/05/03/fast-search-directory-access/helm-ag-fast-which-key.png" />
+</p>
+</div>
+
+<p>
+Good night! Gotta work tomorrow.
+</p>
+
+    </div>
+</div>
+
+        <div>
+        <div class="post-meta">
+            <span title="post date" class="post-info">2016-05-03</span>
+            <span title="last modification date" class="post-info">2016-05-03</span>
+            <span title="tags" class="post-info"><a href="/tags/emacs/">Emacs</a>, <a href="/tags/emacs-lisp/">emacs-lisp</a>, <a href="/tags/helm/">helm</a>, <a href="/tags/helm-ag/">helm-ag</a></span>
+            <span title="author" class="post-info">David Zuber</span>
+        </div>
+        <section>
+            <h1>Comments</h1>
+                <div id="disqus_thread"></div>
+                <script type="text/javascript">
+                 //var disqus_developer = 1;
+                 var disqus_identifier = "/blog/2016/05/03/fast-search-directory-access";
+                 var disqus_url = "https://storax.github.io/blog/2016/05/03/fast-search-directory-access";
+                 var disqus_shortname = 'storaxgithubio';
+                 /* * * DON'T EDIT BELOW THIS LINE * * */
+                 (function() {
+                     var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+                     dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+                     (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+                 })();
+                </script>
+                <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+                <a href="//disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+        </section>
+    <script src="//code.jquery.com/jquery-latest.min.js"></script>
+    <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <div class="footer">
+        <p>Generated by <a href="http://www.gnu.org/software/emacs/">Emacs</a> 24.x (<a href="http://orgmode.org">Org mode</a> 8.x)</p>
+        <p>
+            Copyright &copy; 2012 - <span id="footerYear"></span> <a href="mailto:zuber &lt;dot&gt; david &lt;at&gt; gmx &lt;dot&gt; de">David Zuber</a>
+            &nbsp;&nbsp;-&nbsp;&nbsp;
+            Powered by <a href="https://github.com/kelvinh/org-page" target="_blank">org-page</a>
+            <script type="text/javascript">document.getElementById("footerYear").innerHTML = (new Date()).getFullYear();</script>
+        </p>
+    </div>
+</div>
+
+    </body>
+</html>
