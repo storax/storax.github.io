@@ -13,6 +13,8 @@ I recently started to use quite big org capture templates at work.
 They describe my usual workflow for a complete ticket (triage, implementation, code review, deploy).
 To make the capturing more efficient, I came up with three helpful functions:
 
+EDIT: This post got updated with some code improvements on 03/05/2016.
+
 * Use user input in several locations
 Org capture templates can prompt for user input, but then only inserts it at one location.
 This is quite limiting. The template I created asked for a JIRA ticket number and I wanted to
@@ -31,20 +33,14 @@ variable and return it (so it is inserted at the first location).
   (set variable (read-string (concat prompt ": ") nil oc-capture-prmt-history)))
 #+END_SRC
 
-Then I use another function to insert that stored string elsewhere.
-#+BEGIN_SRC emacs-lisp
-(defun oc/ins (variable)
-  "Insert content of VARIABLE."
-  (symbol-value variable))
-#+END_SRC
-
+For inserting =progn= is all you need.
 So let's say I have a capture template like this:
 #+BEGIN_SRC org
   * JIRA Ticket %(oc/prmt "JIRA Project" 'jr-prj)-%(oc/prmt "JIRA Ticket No." 'jr-no)
-  For project %(oc/ins 'jr-prj) I have to do the following stuff:
-  ** Triage %(oc/ins 'jr-prj)-%(oc/ins 'jr-no)
+  For project %(prgn jr-prj) I have to do the following stuff:
+  ** Triage %(progn jr-prj)-%(progn jr-no)
   Do the triage.
-  ** Implement %(oc/ins 'jr-prj)-%(oc/ins 'jr-no)
+  ** Implement %(progn jr-prj)-%(progn jr-no)
   Implement stuff
   - [ ] Tests pass?
 #+END_SRC
@@ -65,25 +61,25 @@ So it would be nice to have org-capture ask whether I want to include a section.
 
 The function is very minimal:
 #+BEGIN_SRC emacs-lisp
-(defun oc/inc (what text)
+(defun oc/inc (what text &rest fmtvars)
   "Ask user to include WHAT.  If user agrees return TEXT."
   (when (y-or-n-p (concat "Include " what "?"))
-    text))
+    (apply 'format text fmtvars))
 #+END_SRC
 
 The capture template starts to look a little bit ugly:
 #+BEGIN_SRC org
   * JIRA Ticket %(oc/prmt "JIRA Project" 'jr-prj)-%(oc/prmt "JIRA Ticket No." 'jr-no)
-  For project %(oc/ins 'jr-prj) I have to do the following stuff:
-  %(oc/inc "triage" (format
+  For project %(progn jr-prj) I have to do the following stuff:
+  %(oc/inc "triage"
    "** Triage %s-%s
   Do the triage."
-   jr-prj jr-no))
-  %(oc/inc "implementation" (format
+   jr-prj jr-no)
+  %(oc/inc "implementation"
    "** Implement %s-%s
   Implement stuff
   - [ ] Tests pass?"
-   jr-prj jr-no))
+   jr-prj jr-no)
 #+END_SRC
 
 So after getting prompted for the project and ticket number,
