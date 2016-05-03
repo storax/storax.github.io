@@ -1,0 +1,141 @@
+#+TITLE:       Fast search directory access
+#+AUTHOR:      David Zuber
+#+EMAIL:       zuber.david@gmx.de
+#+DATE:        2016-05-03 Di
+#+URI:         /blog/%y/%m/%d/fast-search-directory-access
+#+KEYWORDS:    Emacs, emacs-lisp, helm, helm-ag
+#+TAGS:        :Emacs:emacs-lisp:helm:helm-ag:
+#+LANGUAGE:    en
+#+OPTIONS:     H:6 num:nil toc:nil \n:nil ::t |:t ^:nil -:nil f:t *:t <:t
+#+DESCRIPTION: Procedurally generate keybindings to search in directories.
+
+I don't know whether this is cool or totally stupid.
+It's 1am so I'm almost at the end of the "eat sleep code repeat" cycle.
+I was on my way to bed when I had an idea for making searching a microsecond faster.
+
+I use [[https://github.com/syohex/emacs-helm-ag][helm-ag]] a lot to search stuff in my projects.
+Spacemacs also comes with a handy search in current project function.
+The thing is, that I'm often not in the right buffer for that or I want to search
+in another project.
+I found that there are a couple of directories I frequently search.
+It's not so hard to create functions for each directory but that's cumbersome.
+So here is my plan:
+
+#+BEGIN_QUOTE
+Generate a bunch of keybindings to a list of directories to search in.
+#+END_QUOTE
+
+First we need a mapping of keys to directories.
+Also a prefix for the keybinding might be a good idea:
+#+BEGIN_SRC emacs-lisp
+  (defvar helm-ag-in-dir-prefix "sa SPC "
+    "Prefix for all keybindings of `helm-ag-in-dir-alist'")
+  (defvar helm-ag-in-dir-alist '(("e" . "~/projects/emaci")
+                                  ("o" . "~/Documents/org"))
+    "Mapping of keys to directories for fast search access with `helm-ag-in-dir'.")
+#+END_SRC
+
+Ok, so far so easy.
+Let's define a function that loops over all entries and creates a function and a keybinding.
+Here is the basic loop:
+#+BEGIN_SRC emacs-lisp
+    (defun create-helm-ag-in-dir-bindings (dir-alist)
+      "Create keybindings for searching dirs with `helm-ag'.
+
+    The given DIR-ALIST should map keybindings to directories.
+    All keybindings are prepended with `helm-ag-in-dir-prefix'"
+      (dolist (keydir dir-alist)
+        (let* ((key (car keydir))
+               (dir (cdr keydir))
+               (keychord (concat helm-ag-in-dir-prefix key)))
+          ...)))
+#+END_SRC
+
+But how do we create functions on the fly?
+Well, there is =lambda= or =defun=.
+=lambda= is very easy to use but if you assign it to a keybinding
+[[https://github.com/justbur/emacs-which-key][which-key]] will only display =lambda= in the interface.
+That's not really descriptive.
+We need to assign a name to that lambda.
+=defun= does that, but we can also work around that.
+Here is how you define a lambda:
+#+BEGIN_SRC emacs-lisp
+(lambda () "docstring" (interactive) (message "cool lambda"))
+#+END_SRC
+This will return a cons cell or a [[https://www.gnu.org/software/emacs/manual/html_node/elisp/Function-Cells.html][function cell]].
+The =car= is =lambda= and the =cdr= is =(nil "docstring" (interactive) (message "cool lambda"))=.
+What we need is a new symbol, which will act as the name and then assign it.
+To create a symbol we can use =make-symbol=. The function takes a string which we can construct
+from the directory.
+
+To reliably get the leaf directory I use:
+#+BEGIN_SRC emacs-lisp
+(file-name-base (directory-file-name dir))
+#+END_SRC
+=directory-file-name= makes sure that =/path/directory= and =/path/directory/= both work.
+
+Another thing to keep in mind is that when we create the lambda,
+we have to keep the scope of variables in mind.
+This will fail:
+#+BEGIN_SRC emacs-lisp
+  (setq mylambda
+        (let ((foo "foobar"))
+          (lambda () (message "foo: %s" foo))))
+  (funcall mylambda)
+#+END_SRC
+#+BEGIN_EXAMPLE
+Symbol's value as variable is void: foo
+#+END_EXAMPLE
+
+Emacs lisp has a weird and powerful [[https://www.gnu.org/software/emacs/manual/html_node/elisp/Backquote.html][backquote]] feature.
+You can quote something but selectively evaluate an expression:
+
+#+BEGIN_SRC emacs-lisp
+  (setq mylambda
+        (let ((foo "foobar"))
+          `(lambda () (message "foo: %s" ,foo))))
+  (funcall mylambda)
+#+END_SRC
+#+BEGIN_EXAMPLE
+"foo: foobar"
+#+END_EXAMPLE
+
+Use a comma to evaluate an expression. Basically foo get's replaced with the value =foobar=.
+That's more like it.
+We can use =fset= to assign a lambda to another symbol.
+So putting it all together:
+#+BEGIN_SRC emacs-lisp
+    (defun create-helm-ag-in-dir-bindings (dir-alist)
+      "Create keybindings for searching dirs with `helm-ag'.
+
+    The given DIR-ALIST should map keybindings to directories.
+    All keybindings are prepended with `helm-ag-in-dir-prefix'"
+      (dolist (keydir dir-alist)
+        (let* ((key (car keydir))
+               (dir (cdr keydir))
+               (keychord (concat helm-ag-in-dir-prefix key))
+               (symname (concat "storax-helm-ag-" (file-name-base (directory-file-name dir))))
+               (sym (make-symbol symname))
+               (lf `(lambda ()
+                      ,(concat "Search in " dir " with `helm-ag'.")
+                      (interactive)
+                      (storax/helm-ag-in-dir ,dir))))
+          (fset sym lf)
+          (spacemacs/set-leader-keys keychord sym))))
+#+END_SRC
+We use the backquote construct to also create the docstring of the lambda procedurally.
+Btw, =let*= let's you reference variables in definitions below.
+
+Now we just have to call that function of ours:
+#+BEGIN_SRC emacs-lisp
+(spacemacs/declare-prefix storax-helm-ag-dirs-prefix "dir" "helm-ag in dir")
+(storax/create-helm-ag-bindings storax-helm-ag-dirs-alist)
+#+END_SRC
+
+If you don't use spacemacs, don't worry about the first line but you also have to replace
+=spacemacs/set-leader-keys= in our =create-helm-ag-in-dir-bindings= function with
+=gobal-set-key=.
+
+[[file:helm-ag-fast-which-key.png]]
+
+Good night! Gotta work tomorrow.
