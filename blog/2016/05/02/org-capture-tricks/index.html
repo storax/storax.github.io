@@ -37,6 +37,10 @@ They describe my usual workflow for a complete ticket (triage, implementation, c
 To make the capturing more efficient, I came up with three helpful functions:
 </p>
 
+<p>
+EDIT: This post got updated with some code improvements on 03/05/2016.
+</p>
+
 <div id="outline-container-orgheadline1" class="outline-2">
 <h2 id="orgheadline1">Use user input in several locations</h2>
 <div class="outline-text-2" id="text-orgheadline1">
@@ -64,26 +68,16 @@ variable and return it (so it is inserted at the first location).
 </div>
 
 <p>
-Then I use another function to insert that stored string elsewhere.
-</p>
-<div class="org-src-container">
-
-<pre class="src src-emacs-lisp"><span style="color: #DCDCCC;">(</span><span style="color: #F0DFAF; font-weight: bold;">defun</span> <span style="color: #93E0E3;">oc/ins</span> <span style="color: #BFEBBF;">(</span>variable<span style="color: #BFEBBF;">)</span>
-  <span style="color: #9FC59F;">"Insert content of VARIABLE."</span>
-  <span style="color: #BFEBBF;">(</span>symbol-value variable<span style="color: #BFEBBF;">)</span><span style="color: #DCDCCC;">)</span>
-</pre>
-</div>
-
-<p>
+For inserting <code>progn</code> is all you need.
 So let's say I have a capture template like this:
 </p>
 <div class="org-src-container">
 
 <pre class="src src-org"><span style="color: #DFAF8F;">* JIRA Ticket %(oc/prmt "JIRA Project" 'jr-prj)-%(oc/prmt "JIRA Ticket No." 'jr-no)</span>
-For project %(oc/ins 'jr-prj) I have to do the following stuff:
-<span style="color: #3F3F3F;">*</span><span style="color: #BFEBBF;">* Triage %(oc/ins 'jr-prj)-%(oc/ins 'jr-no)</span>
+For project %(prgn jr-prj) I have to do the following stuff:
+<span style="color: #3F3F3F;">*</span><span style="color: #BFEBBF;">* Triage %(progn jr-prj)-%(progn jr-no)</span>
 Do the triage.
-<span style="color: #3F3F3F;">*</span><span style="color: #BFEBBF;">* Implement %(oc/ins 'jr-prj)-%(oc/ins 'jr-no)</span>
+<span style="color: #3F3F3F;">*</span><span style="color: #BFEBBF;">* Implement %(progn jr-prj)-%(progn jr-no)</span>
 Implement stuff
 - <span style="color: #FFFFEF; background-color: #5F5F5F;">[ ]</span> Tests pass?
 </pre>
@@ -122,10 +116,10 @@ The function is very minimal:
 </p>
 <div class="org-src-container">
 
-<pre class="src src-emacs-lisp"><span style="color: #DCDCCC;">(</span><span style="color: #F0DFAF; font-weight: bold;">defun</span> <span style="color: #93E0E3;">oc/inc</span> <span style="color: #BFEBBF;">(</span>what text<span style="color: #BFEBBF;">)</span>
+<pre class="src src-emacs-lisp"><span style="color: #DCDCCC;">(</span><span style="color: #F0DFAF; font-weight: bold;">defun</span> <span style="color: #93E0E3;">oc/inc</span> <span style="color: #BFEBBF;">(</span>what text <span style="color: #7CB8BB;">&amp;rest</span> fmtvars<span style="color: #BFEBBF;">)</span>
   <span style="color: #9FC59F;">"Ask user to include WHAT.  If user agrees return TEXT."</span>
   <span style="color: #BFEBBF;">(</span><span style="color: #F0DFAF; font-weight: bold;">when</span> <span style="color: #D0BF8F;">(</span>y-or-n-p <span style="color: #93E0E3;">(</span>concat <span style="color: #CC9393;">"Include "</span> what <span style="color: #CC9393;">"?"</span><span style="color: #93E0E3;">)</span><span style="color: #D0BF8F;">)</span>
-    text<span style="color: #BFEBBF;">)</span><span style="color: #DCDCCC;">)</span>
+    <span style="color: #D0BF8F;">(</span>apply 'format text fmtvars<span style="color: #D0BF8F;">)</span><span style="color: #BFEBBF;">)</span>
 </pre>
 </div>
 
@@ -135,16 +129,16 @@ The capture template starts to look a little bit ugly:
 <div class="org-src-container">
 
 <pre class="src src-org"><span style="color: #DFAF8F;">* JIRA Ticket %(oc/prmt "JIRA Project" 'jr-prj)-%(oc/prmt "JIRA Ticket No." 'jr-no)</span>
-For project %(oc/ins 'jr-prj) I have to do the following stuff:
-%(oc/inc "triage" (format
+For project %(progn jr-prj) I have to do the following stuff:
+%(oc/inc "triage"
  "** Triage %s-%s
 Do the triage."
- jr-prj jr-no))
-%(oc/inc "implementation" (format
+ jr-prj jr-no)
+%(oc/inc "implementation"
  "** Implement %s-%s
 Implement stuff
 - <span style="color: #FFFFEF; background-color: #5F5F5F;">[ ]</span> Tests pass?"
- jr-prj jr-no))
+ jr-prj jr-no)
 </pre>
 </div>
 
@@ -186,7 +180,7 @@ Let me know if you find this useful or have other ideas for org capture template
         <div>
         <div class="post-meta">
             <span title="post date" class="post-info">2016-05-02</span>
-            <span title="last modification date" class="post-info">2016-05-02</span>
+            <span title="last modification date" class="post-info">2016-05-03</span>
             <span title="tags" class="post-info"><a href="/tags/emacs/">Emacs</a>, <a href="/tags/emacs-lisp/">emacs-lisp</a>, <a href="/tags/org/">org</a>, <a href="/tags/org-capture/">org-capture</a></span>
             <span title="author" class="post-info">David Zuber</span>
         </div>
