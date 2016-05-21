@@ -1,0 +1,15 @@
+#+TITLE:       Google-Style Python Docstring Yasnippet
+#+AUTHOR:      David Zuber
+#+EMAIL:       zuber.david@gmx.de
+#+DATE:        2016-05-05 Do
+#+URI:         /blog/%y/%m/%d/google-style-python-docstring-yasnippet
+#+KEYWORDS:    Emacs, emacs-lisp, yasnippet, python
+#+TAGS:        :Emacs:emacs-lisp:yasnippet:python:
+#+LANGUAGE:    en
+#+OPTIONS:     H:6 num:nil toc:nil \n:nil ::t |:t ^:nil -:nil f:t *:t <:t
+#+DESCRIPTION: A smart google-style python docstring yasnippet for function definitions.
+
+Here is an experiment to automate the docstring creation for python function
+with yasnippet and making them smarter than ever before.
+
+Yasnippet already ships with 

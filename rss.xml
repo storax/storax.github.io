@@ -3,11 +3,18 @@
   <channel>
     <title>Storax</title>
     <link>https://storax.github.io/</link>
-    <description>Eat sleep code repeat! Soon to be a major emacs mode.</description>
-    <pubDate>Di, 03 Mai 2016 22:55:44 BST</pubDate>
-    <lastBuildDate>Di, 03 Mai 2016 22:55:44 BST</lastBuildDate>
+    <description>Soon to be a major emacs mode.</description>
+    <pubDate>Sa, 21 Mai 2016 16:43:09 BST</pubDate>
+    <lastBuildDate>Sa, 21 Mai 2016 16:43:09 BST</lastBuildDate>
     <docs>http://www.rssboard.org/rss-specification</docs>
     <generator>Org-page static site generator (https://github.com/kelvinh/org-page)</generator>
+    <item>
+      <title>Org capture tricks</title>
+      <link>https://storax.github.io/blog/2016/05/02/org-capture-tricks</link>
+      <description><![CDATA[Handy tricks for org capture templates.]]></description>
+      <pubDate>2016-05-14</pubDate>
+      <guid>https://storax.github.io/blog/2016/05/02/org-capture-tricks</guid>
+    </item>
     <item>
       <title>Consistent avy colors</title>
       <link>https://storax.github.io/blog/2016/05/01/consistent-avy-colors</link>
@@ -35,13 +42,6 @@
       <description><![CDATA[Procedurally generate keybindings to search in directories.]]></description>
       <pubDate>2016-05-03</pubDate>
       <guid>https://storax.github.io/blog/2016/05/03/fast-search-directory-access</guid>
-    </item>
-    <item>
-      <title>Org capture tricks</title>
-      <link>https://storax.github.io/blog/2016/05/02/org-capture-tricks</link>
-      <description><![CDATA[Handy tricks for org capture templates.]]></description>
-      <pubDate>2016-05-03</pubDate>
-      <guid>https://storax.github.io/blog/2016/05/02/org-capture-tricks</guid>
     </item>
     <item>
       <title>Transport for London with Emacs org-mode</title>
