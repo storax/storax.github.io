@@ -4,50 +4,57 @@
     <title>Storax</title>
     <link>https://storax.github.io/</link>
     <description>Soon to be a major emacs mode.</description>
-    <pubDate>Sa, 21 Mai 2016 16:43:09 BST</pubDate>
-    <lastBuildDate>Sa, 21 Mai 2016 16:43:09 BST</lastBuildDate>
+    <pubDate>Mo, 30 Mai 2016 00:25:44 BST</pubDate>
+    <lastBuildDate>Mo, 30 Mai 2016 00:25:44 BST</lastBuildDate>
     <docs>http://www.rssboard.org/rss-specification</docs>
     <generator>Org-page static site generator (https://github.com/kelvinh/org-page)</generator>
     <item>
-      <title>Org capture tricks</title>
-      <link>https://storax.github.io/blog/2016/05/02/org-capture-tricks</link>
-      <description><![CDATA[Handy tricks for org capture templates.]]></description>
-      <pubDate>2016-05-14</pubDate>
-      <guid>https://storax.github.io/blog/2016/05/02/org-capture-tricks</guid>
+      <title>Drawing a directed graph with ASCII-characters in Emacs (Part 1)</title>
+      <link>https://storax.github.io/blog/2016/05/29/drawing-a-directed-graph-with-ascii-characters-in-emacs</link>
+      <description><![CDATA[Start of implementing an algorithm to draw directed graphs in Emacs with only ASCII characters (Part 1).]]></description>
+      <pubDate>2016-05-30</pubDate>
+      <guid>https://storax.github.io/blog/2016/05/29/drawing-a-directed-graph-with-ascii-characters-in-emacs</guid>
     </item>
     <item>
       <title>Consistent avy colors</title>
       <link>https://storax.github.io/blog/2016/05/01/consistent-avy-colors</link>
       <description><![CDATA[Identify keys faster by using consistent colors when using avy.]]></description>
-      <pubDate>2016-05-03</pubDate>
+      <pubDate>2016-05-21</pubDate>
       <guid>https://storax.github.io/blog/2016/05/01/consistent-avy-colors</guid>
     </item>
     <item>
       <title>XMG P505 Headphone Jack - Sounds Easy</title>
       <link>https://storax.github.io/blog/2016/04/24/xmg-p505-headphone-jack---sounds-easy</link>
       <description><![CDATA[How to get the headphone jack of an XMG P505 to work under Linux.]]></description>
-      <pubDate>2016-05-03</pubDate>
+      <pubDate>2016-05-21</pubDate>
       <guid>https://storax.github.io/blog/2016/04/24/xmg-p505-headphone-jack---sounds-easy</guid>
     </item>
     <item>
       <title>Hello World</title>
       <link>https://storax.github.io/blog/2016/04/24/hello-world/</link>
       <description><![CDATA[Hello World]]></description>
-      <pubDate>2016-05-03</pubDate>
+      <pubDate>2016-05-21</pubDate>
       <guid>https://storax.github.io/blog/2016/04/24/hello-world/</guid>
     </item>
     <item>
       <title>Fast search directory access</title>
       <link>https://storax.github.io/blog/2016/05/03/fast-search-directory-access</link>
       <description><![CDATA[Procedurally generate keybindings to search in directories.]]></description>
-      <pubDate>2016-05-03</pubDate>
+      <pubDate>2016-05-21</pubDate>
       <guid>https://storax.github.io/blog/2016/05/03/fast-search-directory-access</guid>
+    </item>
+    <item>
+      <title>Org capture tricks</title>
+      <link>https://storax.github.io/blog/2016/05/02/org-capture-tricks</link>
+      <description><![CDATA[Handy tricks for org capture templates.]]></description>
+      <pubDate>2016-05-21</pubDate>
+      <guid>https://storax.github.io/blog/2016/05/02/org-capture-tricks</guid>
     </item>
     <item>
       <title>Transport for London with Emacs org-mode</title>
       <link>https://storax.github.io/blog/2016/04/24/transport-for-london-with-emacs-org-mode</link>
       <description><![CDATA[A Transport for London app for Emacs]]></description>
-      <pubDate>2016-05-03</pubDate>
+      <pubDate>2016-05-21</pubDate>
       <guid>https://storax.github.io/blog/2016/04/24/transport-for-london-with-emacs-org-mode</guid>
     </item>
   </channel>

@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en-us">
+    <head>
+    <title>Drawing a directed graph with ASCII-characters in Emacs (Part 1) - Storax</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="David Zuber" />
+        <meta name="description" content="Start of implementing an algorithm to draw directed graphs in Emacs with only ASCII characters (Part 1)." />
+        <meta name="keywords" content="Emacs,ascii,graph,emaci,lisp" />
+    <link rel="stylesheet" href="/media/css/main.css" type="text/css">
+</head>
+
+    <body class="container">
+        <div>
+    <header class="masthead">
+        <h1 class="masthead-title"><a href="/">Storax</a></h1>
+        <p>Soon to be a major emacs mode.</p>
+        <ul>
+                <li><a href="/blog/">Blog</a></li>
+            <li><a href="/tags/">Tags</a></li>
+            <li><a href="/about/">About</a></li>
+            <li><a href="https://github.com/storax">GitHub</a></li>
+            <li><a href="/rss.xml">RSS</a></li>
+        </ul>
+        <form method="get" id="searchform" action="//www.google.com/search">
+            <input type="text" class="field" name="q" id="s" placeholder="Search">
+            <input type="hidden" name="as_sitesearch" value="storax.github.io">
+        </form>
+    </header>
+</div>
+
+        <div>
+    <div class="post">
+            <h1>Drawing a directed graph with ASCII-characters in Emacs (Part 1)</h1>
+        <p>
+I recently wrote <a href="https://github.com/storax/emaci">emaci</a>, a Continuous-Integration server in Emacs.
+It already proved to be quite usable. So far it's very simple queue managment system,
+that has multiple queues of jobs and executes each job of a queue serially.
+Having multiple queues allows parallelization and having multiple jobs in a queue introduces dependencies.
+Because each job can also checkout a branch or apply stashes of a git repo (quite useful when working locally)
+I found my self in a situation where I wanted 2 sets of parallel jobs with a dependency to the other set.
+That's not possible with my current setup so I need a proper dependency graph.
+Implementing the graph is probably quite easy (if you don't care about any validation, like cycles etc).
+But since I also visualize the jobs in a managment buffer, I need to draw those graphs with just plain text.
+I could use graphviz or something similar. I tried it and it works quite well, but it introduces a
+dependency and is probaly not really interactive.
+</p>
+
+<p>
+So I set my goal to implement a graph drawing algorithm with will produce ascii graphs.
+I googled "drawing directed graphs" and took the first paper that I found.
+It has the fitting title <a href="http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.359.9872&amp;rep=rep1&amp;type=pdf">A technique for drawing directed graphs.</a>
+</p>
+<blockquote>
+<p>
+Gansner, Emden R., et al. "A technique for drawing directed graphs." Software Engineering, IEEE Transactions on 19.3 (1993): 214-230.
+</p>
+</blockquote>
+<p>
+All that follows is described in the paper and not my research work.
+Credits to Ganser, Emden R. and the rest for their work. It's quite enjoyable.
+Not an extensive research I did there but that paper was published when I was born (which is an irrational
+excuse for me being lazy researching some more).
+Then again, I might have found a way easier to implement paper.
+Anyway I'm currently reading through the paper and taking notes.
+So far it seems doable even though I have absolutely no background in graph theory or maths.
+But all the formulas kinda make sense and are quite simple.
+I'm afraid of the parts where the paper doesn't go into much detail.
+But I'll learn soon enough and I could always find somebody that might help me with it
+(in exchange for a good Single Malt Whisky).
+</p>
+
+<p>
+It's midnight and tomorrow is bank holiday. Let's see how far we get.
+</p>
+
+<div id="outline-container-orgheadline1" class="outline-2">
+<h2 id="orgheadline1">Main algorithm</h2>
+<div class="outline-text-2" id="text-orgheadline1">
+<p>
+So it all starts very simple.
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-emacs-lisp"><span style="color: #DCDCCC;">(</span><span style="color: #F0DFAF; font-weight: bold;">defun</span> <span style="color: #93E0E3;">draw-graph</span> <span style="color: #BFEBBF;">()</span>
+  <span style="color: #BFEBBF;">(</span>rank<span style="color: #BFEBBF;">)</span>
+  <span style="color: #BFEBBF;">(</span>ordering<span style="color: #BFEBBF;">)</span>
+  <span style="color: #BFEBBF;">(</span>position<span style="color: #BFEBBF;">)</span>
+  <span style="color: #BFEBBF;">(</span>draw-edges<span style="color: #BFEBBF;">)</span><span style="color: #DCDCCC;">)</span>
+</pre>
+</div>
+
+<p>
+There is obviously some hidden state. I have to resolve that later and make it more functional.
+But I should be able to break down each part as much as possible until I finally have an
+algorithm that shits out ASCII-graphs.
+</p>
+
+<p>
+So first we place nodes in discrete ranks with a network simplex algorithm.
+Simplex doesn't mean it's trivial, sadly. But probably quite simpler than other solutions.
+Ranks are the levels of the graph:
+</p>
+
+<pre class="example">
+a -- b -- c
+  \- d
+</pre>
+<p>
+Here we can see that <code>a</code> has rank 0, <code>b</code> and <code>d</code> have rank 1 and <code>c</code> has rank 2.
+So far so simple(x).
+Then we order nodes in that graph to avoid edge crossing.
+Afterwards we calculate the positions of each node, taking into consideration the size of each node.
+Then we draw edges. The paper uses spline curves. I have to come up with something simple/clever.
+</p>
+
+<p>
+A edge can have a weight. I don't think I'm gonna need weights, so I have to see if
+that would simplify the formulas.
+So far I know that <code>delta(e)</code> defines the minimum edge length that I or the user can set.
+Probably a <code>defcustom</code> variable, right? The length of each edge has to be greater or equal.
+It's defined via <code>lambda(weight) - lambda(node)</code>. I have no idea what lambda is yet, but
+at least the weight is gonna be 1.
+Leaf edges are trivially calculated (plus 1 of the highest parent node).
+I have to take in to consideration, that I might have multiple graphs for one build.
+Let's see how I'm gonna sequeze them in.
+Single nodes should also find it's place somewhere.
+</p>
+
+<p>
+The rank algorithm first needs to find a feasible tree.
+Then edges are replaced to optimize that tree. Afterwards
+the tree is normalized and balanced, meaning minimum rank is zero and
+nodes that can go to multiple ranks are placed to ranks with minimum amount of nodes
+to avoid clustering:
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-emacs-lisp"><span style="color: #DCDCCC;">(</span><span style="color: #F0DFAF; font-weight: bold;">defun</span> <span style="color: #93E0E3;">rank</span> <span style="color: #BFEBBF;">()</span>
+  <span style="color: #BFEBBF;">(</span>feasible-tree<span style="color: #BFEBBF;">)</span>
+  <span style="color: #BFEBBF;">(</span><span style="color: #F0DFAF; font-weight: bold;">let</span> <span style="color: #D0BF8F;">(</span>e<span style="color: #D0BF8F;">)</span>
+    <span style="color: #D0BF8F;">(</span><span style="color: #F0DFAF; font-weight: bold;">while</span> <span style="color: #93E0E3;">(</span>setq e <span style="color: #9FC59F;">(</span>leave-edge<span style="color: #9FC59F;">)</span><span style="color: #93E0E3;">)</span>
+      <span style="color: #93E0E3;">(</span>exchange e <span style="color: #9FC59F;">(</span>enter-edge e<span style="color: #9FC59F;">)</span><span style="color: #93E0E3;">)</span><span style="color: #D0BF8F;">)</span><span style="color: #BFEBBF;">)</span>
+  <span style="color: #BFEBBF;">(</span>normalize<span style="color: #BFEBBF;">)</span>
+  <span style="color: #BFEBBF;">(</span>balance<span style="color: #BFEBBF;">)</span><span style="color: #DCDCCC;">)</span>
+</pre>
+</div>
+<p>
+<code>e</code> are edges.
+Finding the feasible tree already is quite a thing.
+The paper gives the following pseudo code:
+</p>
+<div class="org-src-container">
+
+<pre class="src src-emacs-lisp"><span style="color: #DCDCCC;">(</span><span style="color: #F0DFAF; font-weight: bold;">defun</span> <span style="color: #93E0E3;">feasible-tree</span> <span style="color: #BFEBBF;">()</span>
+  <span style="color: #BFEBBF;">(</span>init-rank<span style="color: #BFEBBF;">)</span>
+  <span style="color: #BFEBBF;">(</span><span style="color: #F0DFAF; font-weight: bold;">while</span> <span style="color: #D0BF8F;">(</span>&lt; <span style="color: #93E0E3;">(</span>tight-tree<span style="color: #93E0E3;">)</span> <span style="color: #93E0E3;">(</span>absolute-value V<span style="color: #93E0E3;">)</span><span style="color: #D0BF8F;">)</span>
+    <span style="color: #D0BF8F;">(</span><span style="color: #F0DFAF; font-weight: bold;">let</span> <span style="color: #93E0E3;">(</span><span style="color: #9FC59F;">(</span>e <span style="color: #94BFF3;">(</span>get-non-tree-node-incident-on-tree-with-min-slack<span style="color: #94BFF3;">)</span><span style="color: #9FC59F;">)</span>
+          <span style="color: #9FC59F;">(</span>delta <span style="color: #94BFF3;">(</span>slack e<span style="color: #94BFF3;">)</span><span style="color: #9FC59F;">)</span><span style="color: #93E0E3;">)</span>
+      <span style="color: #93E0E3;">(</span><span style="color: #F0DFAF; font-weight: bold;">when</span> <span style="color: #9FC59F;">(</span>eq incident-node <span style="color: #94BFF3;">(</span>e-head e<span style="color: #94BFF3;">)</span><span style="color: #9FC59F;">)</span>
+        <span style="color: #9FC59F;">(</span>setq delta <span style="color: #94BFF3;">(</span>- delta<span style="color: #94BFF3;">)</span><span style="color: #9FC59F;">)</span><span style="color: #93E0E3;">)</span>
+      <span style="color: #93E0E3;">(</span>mapc
+       <span style="color: #9FC59F;">(</span><span style="color: #F0DFAF; font-weight: bold;">lambda</span> <span style="color: #94BFF3;">(</span>v<span style="color: #94BFF3;">)</span> <span style="color: #94BFF3;">(</span>setf <span style="color: #E0CF9F;">(</span>v-rank v<span style="color: #E0CF9F;">)</span> <span style="color: #E0CF9F;">(</span>+ <span style="color: #8FB28F;">(</span>v-rank v<span style="color: #8FB28F;">)</span> delta<span style="color: #E0CF9F;">)</span><span style="color: #94BFF3;">)</span><span style="color: #9FC59F;">)</span>
+       tree<span style="color: #93E0E3;">)</span><span style="color: #D0BF8F;">)</span><span style="color: #BFEBBF;">)</span>
+  <span style="color: #BFEBBF;">(</span>init-cutvalues<span style="color: #BFEBBF;">)</span><span style="color: #DCDCCC;">)</span>
+</pre>
+</div>
+<p>
+<code>v</code> is a node (math, right? Use m,n always to make it hard to read but here use <code>v</code>).
+</p>
+
+<p>
+Slack of an edge is simple:
+</p>
+<div class="org-src-container">
+
+<pre class="src src-emacs-lisp"><span style="color: #DCDCCC;">(</span><span style="color: #F0DFAF; font-weight: bold;">defun</span> <span style="color: #93E0E3;">slack</span> <span style="color: #BFEBBF;">(</span>edge<span style="color: #BFEBBF;">)</span>
+  <span style="color: #BFEBBF;">(</span>- <span style="color: #D0BF8F;">(</span>length edge<span style="color: #D0BF8F;">)</span> <span style="color: #D0BF8F;">(</span>min-length edge<span style="color: #D0BF8F;">)</span><span style="color: #BFEBBF;">)</span><span style="color: #DCDCCC;">)</span>
+</pre>
+</div>
+<p>
+If the slack is nonnegative for every edge the ranking is feasible.
+If the slack is zero the edge is tight.
+</p>
+
+<p>
+The rest of the feasible tree algorithm is quite a read.
+I'm 90% sure what to do, but I'm gonna continue this in the next part.
+First I want to read further to understand it in more detail.
+</p>
+
+<p>
+Coincidentally I'm currently listening to the song <code>We don't know</code> by the <code>Strumbellas</code>.
+I hope it's not a bad sign.
+</p>
+</div>
+</div>
+
+    </div>
+</div>
+
+        <div>
+        <div class="post-meta">
+            <span title="post date" class="post-info">2016-05-29</span>
+            <span title="last modification date" class="post-info">2016-05-30</span>
+            <span title="tags" class="post-info"><a href="/tags/emacs/">Emacs</a>, <a href="/tags/ascii/">ascii</a>, <a href="/tags/graph/">graph</a>, <a href="/tags/emaci/">emaci</a>, <a href="/tags/lisp/">lisp</a></span>
+            <span title="author" class="post-info">David Zuber</span>
+        </div>
+        <section>
+            <h1>Comments</h1>
+                <div id="disqus_thread"></div>
+                <script type="text/javascript">
+                 //var disqus_developer = 1;
+                 var disqus_identifier = "/blog/2016/05/29/drawing-a-directed-graph-with-ascii-characters-in-emacs";
+                 var disqus_url = "https://storax.github.io/blog/2016/05/29/drawing-a-directed-graph-with-ascii-characters-in-emacs";
+                 var disqus_shortname = 'storaxgithubio';
+                 /* * * DON'T EDIT BELOW THIS LINE * * */
+                 (function() {
+                     var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+                     dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+                     (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+                 })();
+                </script>
+                <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+                <a href="//disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+        </section>
+    <script src="//code.jquery.com/jquery-latest.min.js"></script>
+    <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <div class="footer">
+        <p>Generated by <a href="http://www.gnu.org/software/emacs/">Emacs</a> 24.x (<a href="http://orgmode.org">Org mode</a> 8.x)</p>
+        <p>
+            Copyright &copy; 2012 - <span id="footerYear"></span> <a href="mailto:zuber &lt;dot&gt; david &lt;at&gt; gmx &lt;dot&gt; de">David Zuber</a>
+            &nbsp;&nbsp;-&nbsp;&nbsp;
+            Powered by <a href="https://github.com/kelvinh/org-page" target="_blank">org-page</a>
+            <script type="text/javascript">document.getElementById("footerYear").innerHTML = (new Date()).getFullYear();</script>
+        </p>
+    </div>
+</div>
+
+    </body>
+</html>
