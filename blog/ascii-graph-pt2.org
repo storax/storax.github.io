@@ -167,3 +167,285 @@ a ==2= b =2= c =2=d =2= h
 #+END_EXAMPLE
 My guess is that the whole tail component is adjusted, by the amount of slack transfer.
 I have to think about it more. But now it's 4 o'clock at night, so I'll sleep over it.
+
+Good morning! Alright, so reading through the implementation details, we first should
+cut values of edges connecting to a leaf node. It's trivial because either head or tail component has
+only one node.
+#+BEGIN_EXAMPLE
+a -- b -- c -- d -- e
+ \   f --/         /
+  \---------------/
+#+END_EXAMPLE
+So a leaf node is all nodes that have only 1 tight edge.
+They can have non-tree edges.
+If we cut the tight edge, either head or tail is only 1 node.
+In this case =a--b=, =d--e= and =f--c=.
+The cut value is calculated by looking at the edges connecting to the single node.
+If the node is the tail, out-going edges are signed positive, in-going ones are negative.
+If the node is the head, in-going edges are positive, out-going ones negative.
+#+BEGIN_EXAMPLE
+cutvalue = (if tail + else -) out-going + (if tail - else +) in-going.
+#+END_EXAMPLE
+So with =f--c=, =f= is a tail node. That means outgoing ones are positive, giving it the value
+of 1.
+Cutting =a--b= will render =a= as a tail node. It has 2 outgoing edges so the cut value is 2.
+When cutting =d--e=, e is a head node. This will make in going edges positive.
+Since there are 2, the cut value is 2 as well.
+
+**** Optimization by using only local edges.
+The following part was a little bit confusing because it only showed the term
+for one example. It did not give any rules, how the term was constructed.
+The point the paper is trying to make is, that if you have a node, where
+all cut values of tree edges are known, except for 1, you can calculate the cutvalue
+with only looking at the edges connecting with that node.
+The rules are the following:
+
+- start with the weight of the edge with unknown cut value (should be 1 in our case).
+- all non-tree egdes going out increment it by their weight (a.k.a. 1).
+- all non-tree edges going in decrement it by their weight.
+- for tree edges add their cut value but subtract their weight.
+
+This works only when doing it incrementally.
+We take the graph from above:
+#+BEGIN_EXAMPLE
+a === b == c == d == h
+ \--- f == g -------/
+  \== e ==/
+#+END_EXAMPLE
+If we start with =h=, we could calculate the trivial solution and get 2.
+Next we calculate another leaf =f= and get 0.
+#+BEGIN_EXAMPLE
+a === b === c == d =2= h
+ \--- f =0= g --------/
+  \== e ===/
+#+END_EXAMPLE
+Now our incremental algorithm takes over.
+We need a node with only 1 unkown tree edge.
+=d= and =g= are good candidates.
+Let's take =d= and calculate the unknown =c--d= cut value.
+It has one tree edge with cut value 2 and weight 1.
+Also we need the weight of =c--d= which is 1.
+#+BEGIN_EXAMPLE
+cut(c,d) = w(c,d) + cut(d,h) - w(d,h)
+         = 1      + 2        - 1
+         = 2
+#+END_EXAMPLE
+Alright. Result is now this:
+#+BEGIN_EXAMPLE
+a === b === c =2= d =2= h
+ \--- f =0= g ---------/
+  \== e ===/
+#+END_EXAMPLE
+Next we do the same with =c= and then =b= getting to this:
+#+BEGIN_EXAMPLE
+a =2= b =2= c =2= d =2= h
+ \--- f =0= g ---------/
+  \== e ===/
+#+END_EXAMPLE
+Not time for =g=. The unknown edge is =e--g= with weight 1.
+We have 1 outgoing non-tree edge and another tree edge.
+#+BEGIN_EXAMPLE
+cut(e,g) = w(e,g) + w(g,h) + cut(f,g) - w(f,g)
+         = 1      + 1      + 0        - 1
+         = 1
+#+END_EXAMPLE
+Notice how outgoing non-tree edges are positive.
+Weights of tree egdes are always negative while their cut value is positive.
+#+BEGIN_EXAMPLE
+a =2= b =2= c =2= d =2= h
+ \--- f =0= g ---------/
+  \== e =1=/
+#+END_EXAMPLE
+Last but not least we look at =e= and the unknown edge =a--e=.
+#+BEGIN_EXAMPLE
+cut(a,e) = w(a,e) + cut(e,g) - w(e,g)
+         = 1      + 1        - 1
+         = 1
+#+END_EXAMPLE
+Final initial cut values are:
+#+BEGIN_EXAMPLE
+a ==2= b =2= c =2= d =2= h
+ \---- f =0= g ---------/
+  \=1= e =1=/
+#+END_EXAMPLE
+
+I hope this is correct. At least it's consistent with the paper. Not sure if it makes any sense,
+but I feel like I understood it finally.
+Sadly we are not done with optimizing.
+**** Optimization by labeling with postorder traversal
+It provides an inexpensive way to test, which nodes are in the head or in the tail.
+It's important for knowing if a nontree edge crosses between the two components.
+We do a postorder traversal starting from a fixed root node.
+Each node gets labeld with =low(v)= and =lim(v)=.
+We start with both being 1.
+In a tree we always take the left branch first, labeling the node we pass with the current =low= and =lim=
+values. The =low= will always stay set on the node.
+Once we cannot go deeper, we have to go back inceasing current =low= and =lim= by one.
+The next node we encounter get's set it's =lim= but not =low= because it's already set.
+We continue doing that:
+#+BEGIN_EXAMPLE
+               (1,1)
+             _/     \_
+           _/         \_
+         _/             \_
+        /                 \
+     ( , )            ____( , )____
+    /     \         _/      |      \_
+   /       \       /        |        \
+( , )     ( , ) ( , )     ( , )     ( , )
+                  |
+                  |
+                ( , )
+
+               (1,1)
+             _/     \_
+           _/         \_
+         _/             \_
+        /                 \
+     (1,1)            ____( , )____
+    /     \         _/      |      \_
+   /       \       /        |        \
+(1,1)     ( , ) ( , )     ( , )     ( , )
+                  |
+                  |
+                ( , )
+#+END_EXAMPLE
+Now we reached a dead end, so we increase =low= and =lim=.
+#+BEGIN_EXAMPLE
+               (1,1)
+             _/     \_
+           _/         \_
+         _/             \_
+        /                 \
+     (1,2)            ____( , )____
+    /     \         _/      |      \_
+   /       \       /        |        \
+(1,1)     ( , ) ( , )     ( , )     ( , )
+                  |
+                  |
+                ( , )
+
+               (1,1)
+             _/     \_
+           _/         \_
+         _/             \_
+        /                 \
+     (1,2)            ____( , )____
+    /     \         _/      |      \_
+   /       \       /        |        \
+(1,1)     (2,2) ( , )     ( , )     ( , )
+                  |
+                  |
+                ( , )
+#+END_EXAMPLE
+Note that =low= never changed because it keeps the lowest value.
+Another dead end so again increase =low= and =lim=.
+#+BEGIN_EXAMPLE
+               (1,4)
+             _/     \_
+           _/         \_
+         _/             \_
+        /                 \
+     (1,3)            ____( , )____
+    /     \         _/      |      \_
+   /       \       /        |        \
+(1,1)     (2,2) ( , )     ( , )     ( , )
+                  |
+                  |
+                ( , )
+#+END_EXAMPLE
+We had to go up twice so =lim(root)= is now 4.
+#+BEGIN_EXAMPLE
+               (1,4)
+             _/     \_
+           _/         \_
+         _/             \_
+        /                 \
+     (1,3)            ____(4,4)____
+    /     \         _/      |      \_
+   /       \       /        |        \
+(1,1)     (2,2) (4,4)     ( , )     ( , )
+                  |
+                  |
+                (4,4)
+
+               (1,4)
+             _/     \_
+           _/         \_
+         _/             \_
+        /                 \
+     (1,3)            ____(4,6)____
+    /     \         _/      |      \_
+   /       \       /        |        \
+(1,1)     (2,2) (4,5)     ( , )     ( , )
+                  |
+                  |
+                (4,4)
+
+               (1,4)
+             _/     \_
+           _/         \_
+         _/             \_
+        /                 \
+     (1,3)            ____(4,6)____
+    /     \         _/      |      \_
+   /       \       /        |        \
+(1,1)     (2,2) (4,5)     (6,6)     ( , )
+                  |
+                  |
+                (4,4)
+
+               (1,4)
+             _/     \_
+           _/         \_
+         _/             \_
+        /                 \
+     (1,3)            ____(4,7)____
+    /     \         _/      |      \_
+   /       \       /        |        \
+(1,1)     (2,2) (4,5)     (6,6)     (7,7)
+                  |
+                  |
+                (4,4)
+
+               (1,9)
+             _/     \_
+           _/         \_
+         _/             \_
+        /                 \
+     (1,3)            ____(4,8)____
+    /     \         _/      |      \_
+   /       \       /        |        \
+(1,1)     (2,2) (4,5)     (6,6)     (7,7)
+                  |
+                  |
+                (4,4)
+#+END_EXAMPLE
+
+So how do we determine head or tail components.
+Let's take the edge with the node =(1,3)= to =(1,1)=.
+Let's call them =u= and =v=.
+Any node is in the tail component if and only if
+#+BEGIN_EXAMPLE
+low(u) less or equal lim(w) less or equal lim(u)
+#+END_EXAMPLE
+We use that knowledge to update the tree efficiently during the network simplex iterations.
+#+BEGIN_EXAMPLE
+a === b === c === d ==== h
+ \--------- f === g ===/
+  \-------- e ===/
+#+END_EXAMPLE
+If we decide that our entering edge is =a--e=, then we have to walk the *parent*
+edges until we find the least common ancestor =l=. All edges we traversed have to be updated.
+The least common ancestor =l= is the node that satisfies:
+#+BEGIN_EXAMPLE
+low(l) less or equal lim(a) and lim(e) less equal lim(l).
+#+END_EXAMPLE
+In our case this will =h=. So we have to update all edges but =f--g=.
+
+The paper suggests that when choosing an edge with negative-cut value, we shouldn't always take the
+first but search cyclically through. Not sure what they exactly mean,
+but we could try just choosing one at random.
+
+Puh! I have a feeling without a nice graph traversal framework, it's gonna be a pain implementing this.
+In Part 3 we continue with =Vertex Ordering within Ranks=.
