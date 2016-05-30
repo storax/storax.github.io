@@ -130,4 +130,4 @@ First I want to read further to understand it in more detail.
 Coincidentally I'm currently listening to the song =We don't know= by the =Strumbellas=.
 I hope it's not a bad sign.
 
-Continue in [[http://storax.github.io/blog/2016/05/29/drawing-a-directed-graph-with-ascii-characters-in-emacs/][part 2]].
+Continue in [[http://storax.github.io/blog/2016/05/30/drawing-a-directed-graph-with-ascii-characters-in-emacs-%28part-2%29/][part 2]].
