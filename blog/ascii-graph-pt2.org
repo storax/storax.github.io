@@ -1,0 +1,169 @@
+#+TITLE:       Drawing a directed graph with ASCII-characters in Emacs (Part 2)
+#+AUTHOR:      David Zuber
+#+EMAIL:       zuber.david@gmx.de
+#+DATE:        2016-05-30 Mo
+#+URI:         /blog/%y/%m/%d/drawing-a-directed-graph-with-ascii-characters-in-emacs-(part-2)
+#+KEYWORDS:    Emacs,ascii,graph,emaci,lisp
+#+TAGS:        :Emacs:ascii:graph:emaci:lisp:
+#+LANGUAGE:    en
+#+OPTIONS:     H:6 num:nil toc:nil \n:nil ::t |:t ^:nil -:nil f:t *:t <:t
+#+DESCRIPTION: The ranking algortihm.
+
+In [[http://storax.github.io/blog/2016/05/29/drawing-a-directed-graph-with-ascii-characters-in-emacs/][part 1]] I started researching on how to implement an algorithm for drawing directed graphs
+in Emasc.
+
+* The ranking algorithm
+#+BEGIN_SRC emacs-lisp
+  (defun rank ()
+    (feasible-tree)
+    (let (e)
+      (while (setq e (leave-edge))
+        (exchange e (enter-edge e))))
+    (normalize)
+    (balance))
+#+END_SRC
+The ranking algorithm stats with finding a feasible tree
+** feasible-tree
+#+BEGIN_SRC emacs-lisp
+  (defun feasible-tree ()
+    (init-rank)
+    (while (< (tight-tree) (absolute-value V))
+      (let ((e (get-non-tree-node-incident-on-tree-with-min-slack))
+            (delta (slack e)))
+        (when (eq incident-node (e-head e))
+          (setq delta (- delta)))
+        (mapc
+         (lambda (v) (setf (v-rank v) (+ (v-rank v) delta)))
+         tree)))
+    (init-cutvalues))
+#+END_SRC
+Remember =v= is a node, =e= is an edge. Rank is the the level of a node in the graph.
+A tight edge has the slack 0. So if the minimal length of an edge is 1, then
+the slack is calculated by =(- (length e) minimal-length)= so an edge with length 1 would have a slack of zero,
+thus being tight.
+
+*** init-rank
+The paper won't go into detail for brevity (sigh).
+They use a queue.
+You go through all nodes and place a node in the queue when they have no unscanned in-edges.
+So the first nodes would be the ones without any in-edges.
+#+BEGIN_EXAMPLE
+a -- b -- d
+  \-----/
+#+END_EXAMPLE
+In the above graph a has no unscanned in-edges. All edges so far are unscanned.
+So we assign a rank that satisfies the in-edges. Since there are no edges, we use 0.
+Then we mark the outedges as scanned:
+#+BEGIN_EXAMPLE
+a0 == b -- d
+ \========/
+#+END_EXAMPLE
+So an equal sing declares an edge as marked. =a= has been assigned rank 0.
+We check our remaining nodes for candidates for the queue.
+=d= has an unscanned in-edge (=b--d=). But =b= is good.
+So we assign =b= a rank that satisfies the in edges.
+The edge connects to =a= wich already has a rank 0. So to satisfy it =b= gets 1.
+Then we mark out-edges as scanned.
+#+BEGIN_EXAMPLE
+a0 == b1 == d
+ \=========/
+#+END_EXAMPLE
+Now d has no unscanned in-edges anymore so we put it in the queue.
+On in edge goes to =a= which has rank 0 and one goes to =b= with rank 1.
+So to satisfy both we need the maximum plus 1. So =d= gets rank 2.
+The final result of =init-rank= is:
+#+BEGIN_EXAMPLE
+a0 == b2 == d3
+ \=========/
+#+END_EXAMPLE
+
+*** tight-tree
+So according to the paper =tight-tree= finds a maximal tree of tight edges containing some fixed node
+and returns the number of nodes in the tree.
+So for this we disregard directions and use an undirected graph.
+We choose a random node, e.g. =a=, and traverse the tree in all directions using tight edges.
+#+BEGIN_EXAMPLE
+a -- b -- c -- d -- f -- g
+ \        i --/         /
+  \----------- h ------/
+#+END_EXAMPLE
+Not sure if this is what the paper means exactly. I guess my example would not occur
+after =init-rank= but whatever.
+So we pick a random node =a=. Using only tight edges =--= the tight tree is:
+#+BEGIN_EXAMPLE
+a -- b -- c -- d -- f -- g
+          i --/
+#+END_EXAMPLE
+=h= is not part of the tight tree.
+When the number of nodes in the tight tree is the same as number of nodes in the graph,
+the while loop terminates. Then every node is connected to another by at least one
+thight edge.
+*** while body
+We take a non tree edge incident on the tree with minimal slack.
+Allright, so we check each edge of our tree nodes and see if they go to a node that's not in the tree.
+=a -- b= is a tree edge but =a -- h= is not. The slack is 2 (length is 3, minus minimal lenght 1 equals 2).
+=h -- g= is also not a tree edge but the slack is 1 (length is 2, minus minimal length 1 equals 1).
+So we take the edge with minal slack =h -- g=.
+=delta= is the slack value 1.
+If the incident node is the head, delta should be inverted.
+The incident node is =g= (I guess) and it's the head.
+So the rank of all nodes in the tree is decreased by 1.
+#+BEGIN_EXAMPLE
+a -- b -- c -- d -- f -- g
+ \        i --/         /
+  \---------------- h -/
+#+END_EXAMPLE
+As we can see, =h= is now connected with a tight edge to =g=.
+Also note that =a= has a rank of =-1=. That's why we need to normalize the graph afterwards.
+Now all nodes are in the tight tree. We can caluclate this faster by
+taking the tight-tree of =h= before the move and adding all the nodes to the tight tree.
+
+*** init-cutvalues
+This took a while until I fully understood what the paper was trying to say.
+Also it's gonna get complicated calculating this without a very dumb algorithm.
+The paper has some suggestions but they seem more complex than the other stuff.
+
+So this computes the cut values of tree edges.
+We iterate over the edges and mark nodes belonging to the head or tail component.
+It's important that we keep in mind, which edges are tree edges.
+Consider a graph like this
+#+BEGIN_EXAMPLE
+a =3= b =3= c =3= d =3== h
+ \--------- f =0= g =-1=/
+  \-------- e =0=/
+#+END_EXAMPLE
+where the numbers indicate the cut values.
+How does it work.
+We cut the graph at an edge. Let's take =g--h=.
+We have a head component starting from =h=:
+#+BEGIN_EXAMPLE
+a == b == c == d == h
+#+END_EXAMPLE
+and the tail component
+#+BEGIN_EXAMPLE
+f == g
+e ==/
+#+END_EXAMPLE
+Now we sum the signed weight of all edges that have head and tail in different components.
+The sign is negative for edges going from the head component to the tail.
+So the first edge that has head and tail in different components is the edge we just cut.
+It goes from tail to head so the value so far is 1.
+But edges =a--f= and =a--e= also have head and tail in different components.
+They go from the head component to the tail component.
+So we have to negate their weights. The final sum and cut value is =1+(-1)+(-1)=2=.
+So with our two cut components, any edge from head to tail is considered as
+the edge from =enter-edge= (see pseudo code of rank algorithm).
+So between =a--f= and =a--e= the one with the minimal slack is chosen. Both have the same slack
+so we choose at random =a--e=.
+The edges are exchanged so =g--h= now has the length of 2 and =a--e= 1.
+Note that =g--h= and =a--f= are not part of the tree but =a--e= is.
+Not quite sure yet how the exchange happends, but ranks have to be adjusted as well as the cut values.
+The new rank of =e= has to be 0 (note that =a= is -1), same as f.
+=g= is now of rank 1 instead of 2.
+#+BEGIN_EXAMPLE
+a ==2= b =2= c =2=d =2= h
+ \---- f =0= g --------/
+  \=1= e =1=/
+#+END_EXAMPLE
+My guess is that the whole tail component is adjusted, by the amount of slack transfer.
+I have to think about it more. But now it's 4 o'clock at night, so I'll sleep over it.
