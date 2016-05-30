@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en-us">
+    <head>
+    <title>Drawing a directed graph with ASCII-characters in Emacs (Part 2) - Storax</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="David Zuber" />
+        <meta name="description" content="The ranking algortihm." />
+        <meta name="keywords" content="Emacs,ascii,graph,emaci,lisp" />
+    <link rel="stylesheet" href="/media/css/main.css" type="text/css">
+</head>
+
+    <body class="container">
+        <div>
+    <header class="masthead">
+        <h1 class="masthead-title"><a href="/">Storax</a></h1>
+        <p>Soon to be a major emacs mode.</p>
+        <ul>
+                <li><a href="/blog/">Blog</a></li>
+            <li><a href="/tags/">Tags</a></li>
+            <li><a href="/about/">About</a></li>
+            <li><a href="https://github.com/storax">GitHub</a></li>
+            <li><a href="/rss.xml">RSS</a></li>
+        </ul>
+        <form method="get" id="searchform" action="//www.google.com/search">
+            <input type="text" class="field" name="q" id="s" placeholder="Search">
+            <input type="hidden" name="as_sitesearch" value="storax.github.io">
+        </form>
+    </header>
+</div>
+
+        <div>
+    <div class="post">
+            <h1>Drawing a directed graph with ASCII-characters in Emacs (Part 2)</h1>
+        <p>
+In <a href="http://storax.github.io/blog/2016/05/29/drawing-a-directed-graph-with-ascii-characters-in-emacs/">part 1</a> I started researching on how to implement an algorithm for drawing directed graphs
+in Emasc.
+</p>
+
+<div id="outline-container-orgheadline1" class="outline-2">
+<h2 id="orgheadline1">The ranking algorithm</h2>
+<div class="outline-text-2" id="text-orgheadline1">
+<div class="org-src-container">
+
+<pre class="src src-emacs-lisp"><span style="color: #DCDCCC;">(</span><span style="color: #F0DFAF; font-weight: bold;">defun</span> <span style="color: #93E0E3;">rank</span> <span style="color: #BFEBBF;">()</span>
+  <span style="color: #BFEBBF;">(</span>feasible-tree<span style="color: #BFEBBF;">)</span>
+  <span style="color: #BFEBBF;">(</span><span style="color: #F0DFAF; font-weight: bold;">let</span> <span style="color: #D0BF8F;">(</span>e<span style="color: #D0BF8F;">)</span>
+    <span style="color: #D0BF8F;">(</span><span style="color: #F0DFAF; font-weight: bold;">while</span> <span style="color: #93E0E3;">(</span>setq e <span style="color: #9FC59F;">(</span>leave-edge<span style="color: #9FC59F;">)</span><span style="color: #93E0E3;">)</span>
+      <span style="color: #93E0E3;">(</span>exchange e <span style="color: #9FC59F;">(</span>enter-edge e<span style="color: #9FC59F;">)</span><span style="color: #93E0E3;">)</span><span style="color: #D0BF8F;">)</span><span style="color: #BFEBBF;">)</span>
+  <span style="color: #BFEBBF;">(</span>normalize<span style="color: #BFEBBF;">)</span>
+  <span style="color: #BFEBBF;">(</span>balance<span style="color: #BFEBBF;">)</span><span style="color: #DCDCCC;">)</span>
+</pre>
+</div>
+<p>
+The ranking algorithm stats with finding a feasible tree
+</p>
+</div>
+<div id="outline-container-orgheadline2" class="outline-3">
+<h3 id="orgheadline2">feasible-tree</h3>
+<div class="outline-text-3" id="text-orgheadline2">
+<div class="org-src-container">
+
+<pre class="src src-emacs-lisp"><span style="color: #DCDCCC;">(</span><span style="color: #F0DFAF; font-weight: bold;">defun</span> <span style="color: #93E0E3;">feasible-tree</span> <span style="color: #BFEBBF;">()</span>
+  <span style="color: #BFEBBF;">(</span>init-rank<span style="color: #BFEBBF;">)</span>
+  <span style="color: #BFEBBF;">(</span><span style="color: #F0DFAF; font-weight: bold;">while</span> <span style="color: #D0BF8F;">(</span>&lt; <span style="color: #93E0E3;">(</span>tight-tree<span style="color: #93E0E3;">)</span> <span style="color: #93E0E3;">(</span>absolute-value V<span style="color: #93E0E3;">)</span><span style="color: #D0BF8F;">)</span>
+    <span style="color: #D0BF8F;">(</span><span style="color: #F0DFAF; font-weight: bold;">let</span> <span style="color: #93E0E3;">(</span><span style="color: #9FC59F;">(</span>e <span style="color: #94BFF3;">(</span>get-non-tree-node-incident-on-tree-with-min-slack<span style="color: #94BFF3;">)</span><span style="color: #9FC59F;">)</span>
+          <span style="color: #9FC59F;">(</span>delta <span style="color: #94BFF3;">(</span>slack e<span style="color: #94BFF3;">)</span><span style="color: #9FC59F;">)</span><span style="color: #93E0E3;">)</span>
+      <span style="color: #93E0E3;">(</span><span style="color: #F0DFAF; font-weight: bold;">when</span> <span style="color: #9FC59F;">(</span>eq incident-node <span style="color: #94BFF3;">(</span>e-head e<span style="color: #94BFF3;">)</span><span style="color: #9FC59F;">)</span>
+        <span style="color: #9FC59F;">(</span>setq delta <span style="color: #94BFF3;">(</span>- delta<span style="color: #94BFF3;">)</span><span style="color: #9FC59F;">)</span><span style="color: #93E0E3;">)</span>
+      <span style="color: #93E0E3;">(</span>mapc
+       <span style="color: #9FC59F;">(</span><span style="color: #F0DFAF; font-weight: bold;">lambda</span> <span style="color: #94BFF3;">(</span>v<span style="color: #94BFF3;">)</span> <span style="color: #94BFF3;">(</span>setf <span style="color: #E0CF9F;">(</span>v-rank v<span style="color: #E0CF9F;">)</span> <span style="color: #E0CF9F;">(</span>+ <span style="color: #8FB28F;">(</span>v-rank v<span style="color: #8FB28F;">)</span> delta<span style="color: #E0CF9F;">)</span><span style="color: #94BFF3;">)</span><span style="color: #9FC59F;">)</span>
+       tree<span style="color: #93E0E3;">)</span><span style="color: #D0BF8F;">)</span><span style="color: #BFEBBF;">)</span>
+  <span style="color: #BFEBBF;">(</span>init-cutvalues<span style="color: #BFEBBF;">)</span><span style="color: #DCDCCC;">)</span>
+</pre>
+</div>
+<p>
+Remember <code>v</code> is a node, <code>e</code> is an edge. Rank is the the level of a node in the graph.
+A tight edge has the slack 0. So if the minimal length of an edge is 1, then
+the slack is calculated by <code>(- (length e) minimal-length)</code> so an edge with length 1 would have a slack of zero,
+thus being tight.
+</p>
+</div>
+
+<div id="outline-container-orgheadline3" class="outline-4">
+<h4 id="orgheadline3">init-rank</h4>
+<div class="outline-text-4" id="text-orgheadline3">
+<p>
+The paper won't go into detail for brevity (sigh).
+They use a queue.
+You go through all nodes and place a node in the queue when they have no unscanned in-edges.
+So the first nodes would be the ones without any in-edges.
+</p>
+<pre class="example">
+a -- b -- d
+  \-----/
+</pre>
+<p>
+In the above graph a has no unscanned in-edges. All edges so far are unscanned.
+So we assign a rank that satisfies the in-edges. Since there are no edges, we use 0.
+Then we mark the outedges as scanned:
+</p>
+<pre class="example">
+a0 == b -- d
+ \========/
+</pre>
+<p>
+So an equal sing declares an edge as marked. <code>a</code> has been assigned rank 0.
+We check our remaining nodes for candidates for the queue.
+<code>d</code> has an unscanned in-edge (<code>b--d</code>). But <code>b</code> is good.
+So we assign <code>b</code> a rank that satisfies the in edges.
+The edge connects to <code>a</code> wich already has a rank 0. So to satisfy it <code>b</code> gets 1.
+Then we mark out-edges as scanned.
+</p>
+<pre class="example">
+a0 == b1 == d
+ \=========/
+</pre>
+<p>
+Now d has no unscanned in-edges anymore so we put it in the queue.
+On in edge goes to <code>a</code> which has rank 0 and one goes to <code>b</code> with rank 1.
+So to satisfy both we need the maximum plus 1. So <code>d</code> gets rank 2.
+The final result of <code>init-rank</code> is:
+</p>
+<pre class="example">
+a0 == b2 == d3
+ \=========/
+</pre>
+</div>
+</div>
+
+<div id="outline-container-orgheadline4" class="outline-4">
+<h4 id="orgheadline4">tight-tree</h4>
+<div class="outline-text-4" id="text-orgheadline4">
+<p>
+So according to the paper <code>tight-tree</code> finds a maximal tree of tight edges containing some fixed node
+and returns the number of nodes in the tree.
+So for this we disregard directions and use an undirected graph.
+We choose a random node, e.g. <code>a</code>, and traverse the tree in all directions using tight edges.
+</p>
+<pre class="example">
+a -- b -- c -- d -- f -- g
+ \        i --/         /
+  \----------- h ------/
+</pre>
+<p>
+Not sure if this is what the paper means exactly. I guess my example would not occur
+after <code>init-rank</code> but whatever.
+So we pick a random node <code>a</code>. Using only tight edges <code>--</code> the tight tree is:
+</p>
+<pre class="example">
+a -- b -- c -- d -- f -- g
+          i --/
+</pre>
+<p>
+<code>h</code> is not part of the tight tree.
+When the number of nodes in the tight tree is the same as number of nodes in the graph,
+the while loop terminates. Then every node is connected to another by at least one
+thight edge.
+</p>
+</div>
+</div>
+<div id="outline-container-orgheadline5" class="outline-4">
+<h4 id="orgheadline5">while body</h4>
+<div class="outline-text-4" id="text-orgheadline5">
+<p>
+We take a non tree edge incident on the tree with minimal slack.
+Allright, so we check each edge of our tree nodes and see if they go to a node that's not in the tree.
+<code>a -- b</code> is a tree edge but <code>a -- h</code> is not. The slack is 2 (length is 3, minus minimal lenght 1 equals 2).
+<code>h -- g</code> is also not a tree edge but the slack is 1 (length is 2, minus minimal length 1 equals 1).
+So we take the edge with minal slack <code>h -- g</code>.
+<code>delta</code> is the slack value 1.
+If the incident node is the head, delta should be inverted.
+The incident node is <code>g</code> (I guess) and it's the head.
+So the rank of all nodes in the tree is decreased by 1.
+</p>
+<pre class="example">
+a -- b -- c -- d -- f -- g
+ \        i --/         /
+  \---------------- h -/
+</pre>
+<p>
+As we can see, <code>h</code> is now connected with a tight edge to <code>g</code>.
+Also note that <code>a</code> has a rank of <code>-1</code>. That's why we need to normalize the graph afterwards.
+Now all nodes are in the tight tree. We can caluclate this faster by
+taking the tight-tree of <code>h</code> before the move and adding all the nodes to the tight tree.
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgheadline6" class="outline-4">
+<h4 id="orgheadline6">init-cutvalues</h4>
+<div class="outline-text-4" id="text-orgheadline6">
+<p>
+This took a while until I fully understood what the paper was trying to say.
+Also it's gonna get complicated calculating this without a very dumb algorithm.
+The paper has some suggestions but they seem more complex than the other stuff.
+</p>
+
+<p>
+So this computes the cut values of tree edges.
+We iterate over the edges and mark nodes belonging to the head or tail component.
+It's important that we keep in mind, which edges are tree edges.
+Consider a graph like this
+</p>
+<pre class="example">
+a =3= b =3= c =3= d =3== h
+ \--------- f =0= g =-1=/
+  \-------- e =0=/
+</pre>
+<p>
+where the numbers indicate the cut values.
+How does it work.
+We cut the graph at an edge. Let's take <code>g--h</code>.
+We have a head component starting from <code>h</code>:
+</p>
+<pre class="example">
+a == b == c == d == h
+</pre>
+<p>
+and the tail component
+</p>
+<pre class="example">
+f == g
+e ==/
+</pre>
+<p>
+Now we sum the signed weight of all edges that have head and tail in different components.
+The sign is negative for edges going from the head component to the tail.
+So the first edge that has head and tail in different components is the edge we just cut.
+It goes from tail to head so the value so far is 1.
+But edges <code>a--f</code> and <code>a--e</code> also have head and tail in different components.
+They go from the head component to the tail component.
+So we have to negate their weights. The final sum and cut value is <code>1+(-1)+(-1)=2</code>.
+So with our two cut components, any edge from head to tail is considered as
+the edge from <code>enter-edge</code> (see pseudo code of rank algorithm).
+So between <code>a--f</code> and <code>a--e</code> the one with the minimal slack is chosen. Both have the same slack
+so we choose at random <code>a--e</code>.
+The edges are exchanged so <code>g--h</code> now has the length of 2 and <code>a--e</code> 1.
+Note that <code>g--h</code> and <code>a--f</code> are not part of the tree but <code>a--e</code> is.
+Not quite sure yet how the exchange happends, but ranks have to be adjusted as well as the cut values.
+The new rank of <code>e</code> has to be 0 (note that <code>a</code> is -1), same as f.
+<code>g</code> is now of rank 1 instead of 2.
+</p>
+<pre class="example">
+a ==2= b =2= c =2=d =2= h
+ \---- f =0= g --------/
+  \=1= e =1=/
+</pre>
+<p>
+My guess is that the whole tail component is adjusted, by the amount of slack transfer.
+I have to think about it more. But now it's 4 o'clock at night, so I'll sleep over it.
+</p>
+</div>
+</div>
+</div>
+</div>
+
+    </div>
+</div>
+
+        <div>
+        <div class="post-meta">
+            <span title="post date" class="post-info">2016-05-30</span>
+            <span title="last modification date" class="post-info">2016-05-30</span>
+            <span title="tags" class="post-info"><a href="/tags/emacs/">Emacs</a>, <a href="/tags/ascii/">ascii</a>, <a href="/tags/graph/">graph</a>, <a href="/tags/emaci/">emaci</a>, <a href="/tags/lisp/">lisp</a></span>
+            <span title="author" class="post-info">David Zuber</span>
+        </div>
+        <section>
+            <h1>Comments</h1>
+                <div id="disqus_thread"></div>
+                <script type="text/javascript">
+                 //var disqus_developer = 1;
+                 var disqus_identifier = "/blog/2016/05/30/drawing-a-directed-graph-with-ascii-characters-in-emacs-(part-2)";
+                 var disqus_url = "https://storax.github.io/blog/2016/05/30/drawing-a-directed-graph-with-ascii-characters-in-emacs-(part-2)";
+                 var disqus_shortname = 'storaxgithubio';
+                 /* * * DON'T EDIT BELOW THIS LINE * * */
+                 (function() {
+                     var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+                     dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+                     (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+                 })();
+                </script>
+                <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+                <a href="//disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+        </section>
+    <script src="//code.jquery.com/jquery-latest.min.js"></script>
+    <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <div class="footer">
+        <p>Generated by <a href="http://www.gnu.org/software/emacs/">Emacs</a> 24.x (<a href="http://orgmode.org">Org mode</a> 8.x)</p>
+        <p>
+            Copyright &copy; 2012 - <span id="footerYear"></span> <a href="mailto:zuber &lt;dot&gt; david &lt;at&gt; gmx &lt;dot&gt; de">David Zuber</a>
+            &nbsp;&nbsp;-&nbsp;&nbsp;
+            Powered by <a href="https://github.com/kelvinh/org-page" target="_blank">org-page</a>
+            <script type="text/javascript">document.getElementById("footerYear").innerHTML = (new Date()).getFullYear();</script>
+        </p>
+    </div>
+</div>
+
+    </body>
+</html>
