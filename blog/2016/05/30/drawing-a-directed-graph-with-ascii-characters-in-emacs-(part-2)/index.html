@@ -134,58 +134,89 @@ a0 == b2 == d3
 So according to the paper <code>tight-tree</code> finds a maximal tree of tight edges containing some fixed node
 and returns the number of nodes in the tree.
 So for this we disregard directions and use an undirected graph.
-We choose a random node, e.g. <code>a</code>, and traverse the tree in all directions using tight edges.
+We choose a random node, e.g. <code>a</code>, and traverse the tree in all directions using tight edges only.
 </p>
 <pre class="example">
 a -- b -- c -- d -- f -- g
- \        i --/         /
-  \----------- h ------/
+ \        h --/         /
+  \----------- l ------/
+i -- j -- k -/
 </pre>
 <p>
-Not sure if this is what the paper means exactly. I guess my example would not occur
-after <code>init-rank</code> but whatever.
-So we pick a random node <code>a</code>. Using only tight edges <code>--</code> the tight tree is:
+The paper explains that the <code>tight-tree</code> is a <code>spanning-tree</code>.
+So if we take the graph above and use node <code>a</code> as a start, the max spanning tree
+would look like this:
 </p>
 <pre class="example">
 a -- b -- c -- d -- f -- g
-          i --/
+          h --/
+
+i -- j -- k -- l
 </pre>
 <p>
-<code>h</code> is not part of the tight tree.
-When the number of nodes in the tight tree is the same as number of nodes in the graph,
-the while loop terminates. Then every node is connected to another by at least one
-thight edge.
+We have 2 tight trees. One contains <code>a</code> and the other one contains <code>i</code>.
+Note that the original direction of the edges don't matter, so <code>h</code> is just another
+leaf node of the spanning tree.
+The tree with <code>a</code> has the maximum amount of nodes so we start with that one.
+Every node in the trees is connected by at least one thight edge.
+</p>
+
+<p>
+Our while loop will run until the tight tree contains all nodes of our graph.
+So we have to figure out how to make the tree with <code>i</code> part of our maximum tight tree.
 </p>
 </div>
 </div>
 <div id="outline-container-orgheadline5" class="outline-4">
 <h4 id="orgheadline5">while body</h4>
 <div class="outline-text-4" id="text-orgheadline5">
+<div class="org-src-container">
+
+<pre class="src src-emacs-lisp"><span style="color: #DCDCCC;">(</span><span style="color: #F0DFAF; font-weight: bold;">let</span> <span style="color: #BFEBBF;">(</span><span style="color: #D0BF8F;">(</span>e <span style="color: #93E0E3;">(</span>get-non-tree-node-incident-on-tree-with-min-slack<span style="color: #93E0E3;">)</span><span style="color: #D0BF8F;">)</span>
+      <span style="color: #D0BF8F;">(</span>delta <span style="color: #93E0E3;">(</span>slack e<span style="color: #93E0E3;">)</span><span style="color: #D0BF8F;">)</span><span style="color: #BFEBBF;">)</span>
+  <span style="color: #BFEBBF;">(</span><span style="color: #F0DFAF; font-weight: bold;">when</span> <span style="color: #D0BF8F;">(</span>eq incident-node <span style="color: #93E0E3;">(</span>e-head e<span style="color: #93E0E3;">)</span><span style="color: #D0BF8F;">)</span>
+    <span style="color: #D0BF8F;">(</span>setq delta <span style="color: #93E0E3;">(</span>- delta<span style="color: #93E0E3;">)</span><span style="color: #D0BF8F;">)</span><span style="color: #BFEBBF;">)</span>
+  <span style="color: #BFEBBF;">(</span>mapc
+   <span style="color: #D0BF8F;">(</span><span style="color: #F0DFAF; font-weight: bold;">lambda</span> <span style="color: #93E0E3;">(</span>v<span style="color: #93E0E3;">)</span> <span style="color: #93E0E3;">(</span>setf <span style="color: #9FC59F;">(</span>v-rank v<span style="color: #9FC59F;">)</span> <span style="color: #9FC59F;">(</span>+ <span style="color: #94BFF3;">(</span>v-rank v<span style="color: #94BFF3;">)</span> delta<span style="color: #9FC59F;">)</span><span style="color: #93E0E3;">)</span><span style="color: #D0BF8F;">)</span>
+   tree<span style="color: #BFEBBF;">)</span><span style="color: #DCDCCC;">)</span>
+</pre>
+</div>
 <p>
 We take a non tree edge incident on the tree with minimal slack.
-Allright, so we check each edge of our tree nodes and see if they go to a node that's not in the tree.
-<code>a -- b</code> is a tree edge but <code>a -- h</code> is not. The slack is 2 (length is 3, minus minimal lenght 1 equals 2).
-<code>h -- g</code> is also not a tree edge but the slack is 1 (length is 2, minus minimal length 1 equals 1).
-So we take the edge with minal slack <code>h -- g</code>.
-<code>delta</code> is the slack value 1.
-If the incident node is the head, delta should be inverted.
-The incident node is <code>g</code> (I guess) and it's the head.
-So the rank of all nodes in the tree is decreased by 1.
+So we loop through the nodes of our tree and check for non tight edges.
+Then we have to check if the edge connects to a node that is not part of our current max tree.
 </p>
 <pre class="example">
 a -- b -- c -- d -- f -- g
- \        i --/         /
-  \---------------- h -/
+ \        h --/         /
+  \----------- l ------/
+i -- j -- k --/
 </pre>
 <p>
-As we can see, <code>h</code> is now connected with a tight edge to <code>g</code>.
-Also note that <code>a</code> has a rank of <code>-1</code>. That's why we need to normalize the graph afterwards.
-Now all nodes are in the tight tree. We can caluclate this faster by
-taking the tight-tree of <code>h</code> before the move and adding all the nodes to the tight tree.
+<code>a -- l</code> is a non-tight edge. <code>l</code> also happens to be part of the other tree.
+The slack is 2 (because the node is 2 units longer than the minimum length 1).
+We take a note of that and continue our search.
+<code>l -- g</code> is also a non-tight edge and <code>l</code> is still not part of the maximal tight tree.
+The slack in this case is just 1.
+We choose <code>l -- g</code> because the slack is minimal.
+Our <code>delta</code> is 1.
+The incident node is the head of the edge so the <code>delta</code> is negated.
+Now it's time to loop through the nodes of the tree and add delta to the rank.
+The result looks like this:
+</p>
+<pre class="example">
+a -- b -- c -- d -- f -- g
+ \        h --/         /
+  \---------------- l -/
+     i -- j -- k --/
+</pre>
+<p>
+We add both tight trees together and now the number of nodes is the same
+as the number of nodes in the graph.
+The while loop terminates here.
 </p>
 </div>
 </div>
-
 <div id="outline-container-orgheadline6" class="outline-4">
 <h4 id="orgheadline6">init-cutvalues</h4>
 <div class="outline-text-4" id="text-orgheadline6">
@@ -202,85 +233,121 @@ It's important that we keep in mind, which edges are tree edges.
 Consider a graph like this
 </p>
 <pre class="example">
-a =3= b =3= c =3= d =3== h
- \--------- f =0= g =-1=/
-  \-------- e =0=/
+a === b === c === d === f === g
+ \          h ===/           /
+  \-------------------- k ==/
+   \------- i === j ===/
 </pre>
 <p>
-where the numbers indicate the cut values.
-How does it work.
-We cut the graph at an edge. Let's take <code>g--h</code>.
-We have a head component starting from <code>h</code>:
+How do we calculate the cutvalues?
+We cut the graph at an edge. Let's take <code>l--g</code>.
+This results in a head and a tail component of tight trees:
 </p>
 <pre class="example">
-a == b == c == d == h
+Head:
+a === b === c === d === f === g
+            h ===/
+Tail:
+                        k
+            i === j ===/
 </pre>
 <p>
-and the tail component
+Now we perform
+</p>
+<blockquote>
+<p>
+the sum of the signed weights of all edges whose head and tail are in different components,
+the sign being negative for those edges goin from the head to the tail component.
+</p>
+</blockquote>
+<p>
+Alright! Let's get all of those edges that connect the trees.
+They are markes with a <code>+</code>
 </p>
 <pre class="example">
-f == g
-e ==/
+a === b === c === d === f === g
+ \          h ===/           /
+  \++++++++++++++++++++ k ++/
+   \+++++++ i === j ===/
 </pre>
 <p>
-Now we sum the signed weight of all edges that have head and tail in different components.
-The sign is negative for edges going from the head component to the tail.
-So the first edge that has head and tail in different components is the edge we just cut.
-It goes from tail to head so the value so far is 1.
-But edges <code>a--f</code> and <code>a--e</code> also have head and tail in different components.
-They go from the head component to the tail component.
-So we have to negate their weights. The final sum and cut value is <code>1+(-1)+(-1)=2</code>.
-So with our two cut components, any edge from head to tail is considered as
-the edge from <code>enter-edge</code> (see pseudo code of rank algorithm).
-So between <code>a--f</code> and <code>a--e</code> the one with the minimal slack is chosen. Both have the same slack
-so we choose at random <code>a--e</code>.
-The edges are exchanged so <code>g--h</code> now has the length of 2 and <code>a--e</code> 1.
-Note that <code>g--h</code> and <code>a--f</code> are not part of the tree but <code>a--e</code> is.
-Not quite sure yet how the exchange happends, but ranks have to be adjusted as well as the cut values.
-The new rank of <code>e</code> has to be 0 (note that <code>a</code> is -1), same as f.
-<code>g</code> is now of rank 1 instead of 2.
+So we get <code>a--k</code>, <code>a--i</code> and <code>k--g</code>.
+Because <code>a</code> is in the head, the sign of <code>a--k</code> and <code>a--i</code> is negative.
+<code>(-1) + (-1) + 1</code> gives us a cut value of <code>-1</code>.
 </p>
 <pre class="example">
-a ==2= b =2= c =2=d =2= h
- \---- f =0= g --------/
-  \=1= e =1=/
+a === b === c === d === f ==== g
+ \          h ===/            /
+  \-------------------- k =-1/
+   \------- i === j ===/
 </pre>
 <p>
-My guess is that the whole tail component is adjusted, by the amount of slack transfer.
-I have to think about it more. But now it's 4 o'clock at night, so I'll sleep over it.
+<code>k--g</code> has been marked with cut value <code>-1</code>.
+We do the same for the other edges:
 </p>
+<pre class="example">
+a =3= b =3= c =3= d =3= f =3== g
+ \          h =1=/            /
+  \-------------------- k =-1/
+   \------- i =0= j =0=/
+</pre>
+<p>
+The <code>feasible-tree</code> algorithm ends here but the <code>network simplex</code> just started.
+</p>
+<div class="org-src-container">
 
+<pre class="src src-emacs-lisp"><span style="color: #DCDCCC;">(</span><span style="color: #F0DFAF; font-weight: bold;">defun</span> <span style="color: #93E0E3;">rank</span> <span style="color: #BFEBBF;">()</span>
+  <span style="color: #BFEBBF;">(</span>feasible-tree<span style="color: #BFEBBF;">)</span>
+  <span style="color: #BFEBBF;">(</span><span style="color: #F0DFAF; font-weight: bold;">let</span> <span style="color: #D0BF8F;">(</span>e<span style="color: #D0BF8F;">)</span>
+    <span style="color: #D0BF8F;">(</span><span style="color: #F0DFAF; font-weight: bold;">while</span> <span style="color: #93E0E3;">(</span>setq e <span style="color: #9FC59F;">(</span>leave-edge<span style="color: #9FC59F;">)</span><span style="color: #93E0E3;">)</span>
+      <span style="color: #93E0E3;">(</span>exchange e <span style="color: #9FC59F;">(</span>enter-edge e<span style="color: #9FC59F;">)</span><span style="color: #93E0E3;">)</span><span style="color: #D0BF8F;">)</span><span style="color: #BFEBBF;">)</span>
+  <span style="color: #BFEBBF;">(</span>normalize<span style="color: #BFEBBF;">)</span>
+  <span style="color: #BFEBBF;">(</span>balance<span style="color: #BFEBBF;">)</span><span style="color: #DCDCCC;">)</span>
+</pre>
+</div>
 <p>
-Good morning! Alright, so reading through the implementation details, we first should
-cut values of edges connecting to a leaf node. It's trivial because either head or tail component has
-only one node.
+It will replace the edges with negative cut values with
+non-tree edges to get only non negative cut values.
+The <code>leave-edge</code> described in the paper would be <code>k--g</code> because of the negative cut value.
+The <code>enter-edge</code> is one of the non-tree edges going from head to tail component with minimal slack.
 </p>
 <pre class="example">
-a -- b -- c -- d -- e
- \   f --/         /
-  \---------------/
+Head:
+a === b === c === d === f === g
+            h ===/
+Tail:
+                        k
+            i === j ===/
+
+Non-Tree edges from head to tail:
+a
+ \--------------------- k
+  \-------- i === j ===/
 </pre>
 <p>
-So a leaf node is all nodes that have only 1 tight edge.
-They can have non-tree edges.
-If we cut the tight edge, either head or tail is only 1 node.
-In this case <code>a--b</code>, <code>d--e</code> and <code>f--c</code>.
-The cut value is calculated by looking at the edges connecting to the single node.
-If the node is the tail, out-going edges are signed positive, in-going ones are negative.
-If the node is the head, in-going edges are positive, out-going ones negative.
+So <code>a--i</code> and <code>a--k</code> are candidates for <code>enter-edges</code>. <code>a--i</code> has the smaller
+slack. So we exchange <code>a--i</code> and <code>k--g</code>.
+This will adjust the ranks of our tail tree:
 </p>
 <pre class="example">
-cutvalue = (if tail + else -) out-going + (if tail - else +) in-going.
+a === b === c === d === f === g
+ \          h ===/           /
+  \-------------- k --------/
+   \= i === j ===/
 </pre>
 <p>
-So with <code>f--c</code>, <code>f</code> is a tail node. That means outgoing ones are positive, giving it the value
-of 1.
-Cutting <code>a--b</code> will render <code>a</code> as a tail node. It has 2 outgoing edges so the cut value is 2.
-When cutting <code>d--e</code>, e is a head node. This will make in going edges positive.
-Since there are 2, the cut value is 2 as well.
+The new cut values are:
+</p>
+<pre class="example">
+a =2= b =2= c =2= d =2= f =2= g
+ \          h =1=/           /
+  \-------------- k --------/
+   \1 i =1= j =1=/
+</pre>
+<p>
+Because we only have positive cut values the all that is left is normalize and balancing.
 </p>
 </div>
-
 <div id="outline-container-orgheadline7" class="outline-5">
 <h5 id="orgheadline7">Optimization by using only local edges.</h5>
 <div class="outline-text-5" id="text-orgheadline7">
@@ -585,8 +652,10 @@ but we could try just choosing one at random.
 </p>
 
 <p>
-Puh! I have a feeling without a nice graph traversal framework, it's gonna be a pain implementing this.
-In Part 3 we continue with <code>Vertex Ordering within Ranks</code>.
+Puh! I have a feeling without a nice graph framework, it's gonna be a pain implementing this.
+We need stuff like a data structure, postorder traversal and depth-first search.
+Those are still quite simple but since I'm starting from scratch it's still a lot of effort.
+In Part 3 we continue with some basic <code>graph implementations</code>.
 </p>
 </div>
 </div>
@@ -600,7 +669,7 @@ In Part 3 we continue with <code>Vertex Ordering within Ranks</code>.
         <div>
         <div class="post-meta">
             <span title="post date" class="post-info">2016-05-30</span>
-            <span title="last modification date" class="post-info">2016-05-30</span>
+            <span title="last modification date" class="post-info">2016-06-05</span>
             <span title="tags" class="post-info"><a href="/tags/emacs/">Emacs</a>, <a href="/tags/ascii/">ascii</a>, <a href="/tags/graph/">graph</a>, <a href="/tags/emaci/">emaci</a>, <a href="/tags/lisp/">lisp</a></span>
             <span title="author" class="post-info">David Zuber</span>
         </div>
