@@ -81,43 +81,68 @@ a0 == b2 == d3
 So according to the paper =tight-tree= finds a maximal tree of tight edges containing some fixed node
 and returns the number of nodes in the tree.
 So for this we disregard directions and use an undirected graph.
-We choose a random node, e.g. =a=, and traverse the tree in all directions using tight edges.
+We choose a random node, e.g. =a=, and traverse the tree in all directions using tight edges only.
 #+BEGIN_EXAMPLE
 a -- b -- c -- d -- f -- g
- \        i --/         /
-  \----------- h ------/
+ \        h --/         /
+  \----------- l ------/
+i -- j -- k -/
 #+END_EXAMPLE
-Not sure if this is what the paper means exactly. I guess my example would not occur
-after =init-rank= but whatever.
-So we pick a random node =a=. Using only tight edges =--= the tight tree is:
+The paper explains that the =tight-tree= is a =spanning-tree=.
+So if we take the graph above and use node =a= as a start, the max spanning tree
+would look like this:
 #+BEGIN_EXAMPLE
 a -- b -- c -- d -- f -- g
-          i --/
-#+END_EXAMPLE
-=h= is not part of the tight tree.
-When the number of nodes in the tight tree is the same as number of nodes in the graph,
-the while loop terminates. Then every node is connected to another by at least one
-thight edge.
-*** while body
-We take a non tree edge incident on the tree with minimal slack.
-Allright, so we check each edge of our tree nodes and see if they go to a node that's not in the tree.
-=a -- b= is a tree edge but =a -- h= is not. The slack is 2 (length is 3, minus minimal lenght 1 equals 2).
-=h -- g= is also not a tree edge but the slack is 1 (length is 2, minus minimal length 1 equals 1).
-So we take the edge with minal slack =h -- g=.
-=delta= is the slack value 1.
-If the incident node is the head, delta should be inverted.
-The incident node is =g= (I guess) and it's the head.
-So the rank of all nodes in the tree is decreased by 1.
-#+BEGIN_EXAMPLE
-a -- b -- c -- d -- f -- g
- \        i --/         /
-  \---------------- h -/
-#+END_EXAMPLE
-As we can see, =h= is now connected with a tight edge to =g=.
-Also note that =a= has a rank of =-1=. That's why we need to normalize the graph afterwards.
-Now all nodes are in the tight tree. We can caluclate this faster by
-taking the tight-tree of =h= before the move and adding all the nodes to the tight tree.
+          h --/
 
+i -- j -- k -- l
+#+END_EXAMPLE
+We have 2 tight trees. One contains =a= and the other one contains =i=.
+Note that the original direction of the edges don't matter, so =h= is just another
+leaf node of the spanning tree.
+The tree with =a= has the maximum amount of nodes so we start with that one.
+Every node in the trees is connected by at least one thight edge.
+
+Our while loop will run until the tight tree contains all nodes of our graph.
+So we have to figure out how to make the tree with =i= part of our maximum tight tree.
+*** while body
+#+BEGIN_SRC emacs-lisp
+  (let ((e (get-non-tree-node-incident-on-tree-with-min-slack))
+        (delta (slack e)))
+    (when (eq incident-node (e-head e))
+      (setq delta (- delta)))
+    (mapc
+     (lambda (v) (setf (v-rank v) (+ (v-rank v) delta)))
+     tree))
+#+END_SRC
+We take a non tree edge incident on the tree with minimal slack.
+So we loop through the nodes of our tree and check for non tight edges.
+Then we have to check if the edge connects to a node that is not part of our current max tree.
+#+BEGIN_EXAMPLE
+a -- b -- c -- d -- f -- g
+ \        h --/         /
+  \----------- l ------/
+i -- j -- k --/
+#+END_EXAMPLE
+=a -- l= is a non-tight edge. =l= also happens to be part of the other tree.
+The slack is 2 (because the node is 2 units longer than the minimum length 1).
+We take a note of that and continue our search.
+=l -- g= is also a non-tight edge and =l= is still not part of the maximal tight tree.
+The slack in this case is just 1.
+We choose =l -- g= because the slack is minimal.
+Our =delta= is 1.
+The incident node is the head of the edge so the =delta= is negated.
+Now it's time to loop through the nodes of the tree and add delta to the rank.
+The result looks like this:
+#+BEGIN_EXAMPLE
+a -- b -- c -- d -- f -- g
+ \        h --/         /
+  \---------------- l -/
+     i -- j -- k --/
+#+END_EXAMPLE
+We add both tight trees together and now the number of nodes is the same
+as the number of nodes in the graph.
+The while loop terminates here.
 *** init-cutvalues
 This took a while until I fully understood what the paper was trying to say.
 Also it's gonna get complicated calculating this without a very dumb algorithm.
@@ -128,70 +153,96 @@ We iterate over the edges and mark nodes belonging to the head or tail component
 It's important that we keep in mind, which edges are tree edges.
 Consider a graph like this
 #+BEGIN_EXAMPLE
-a =3= b =3= c =3= d =3== h
- \--------- f =0= g =-1=/
-  \-------- e =0=/
+a === b === c === d === f === g
+ \          h ===/           /
+  \-------------------- k ==/
+   \------- i === j ===/
 #+END_EXAMPLE
-where the numbers indicate the cut values.
-How does it work.
-We cut the graph at an edge. Let's take =g--h=.
-We have a head component starting from =h=:
+How do we calculate the cutvalues?
+We cut the graph at an edge. Let's take =l--g=.
+This results in a head and a tail component of tight trees:
 #+BEGIN_EXAMPLE
-a == b == c == d == h
+Head:
+a === b === c === d === f === g
+            h ===/
+Tail:
+                        k
+            i === j ===/
 #+END_EXAMPLE
-and the tail component
+Now we perform
+#+BEGIN_QUOTE
+the sum of the signed weights of all edges whose head and tail are in different components,
+the sign being negative for those edges goin from the head to the tail component.
+#+END_QUOTE
+Alright! Let's get all of those edges that connect the trees.
+They are markes with a =+=
 #+BEGIN_EXAMPLE
-f == g
-e ==/
+a === b === c === d === f === g
+ \          h ===/           /
+  \++++++++++++++++++++ k ++/
+   \+++++++ i === j ===/
 #+END_EXAMPLE
-Now we sum the signed weight of all edges that have head and tail in different components.
-The sign is negative for edges going from the head component to the tail.
-So the first edge that has head and tail in different components is the edge we just cut.
-It goes from tail to head so the value so far is 1.
-But edges =a--f= and =a--e= also have head and tail in different components.
-They go from the head component to the tail component.
-So we have to negate their weights. The final sum and cut value is =1+(-1)+(-1)=2=.
-So with our two cut components, any edge from head to tail is considered as
-the edge from =enter-edge= (see pseudo code of rank algorithm).
-So between =a--f= and =a--e= the one with the minimal slack is chosen. Both have the same slack
-so we choose at random =a--e=.
-The edges are exchanged so =g--h= now has the length of 2 and =a--e= 1.
-Note that =g--h= and =a--f= are not part of the tree but =a--e= is.
-Not quite sure yet how the exchange happends, but ranks have to be adjusted as well as the cut values.
-The new rank of =e= has to be 0 (note that =a= is -1), same as f.
-=g= is now of rank 1 instead of 2.
+So we get =a--k=, =a--i= and =k--g=.
+Because =a= is in the head, the sign of =a--k= and =a--i= is negative.
+=(-1) + (-1) + 1= gives us a cut value of =-1=.
 #+BEGIN_EXAMPLE
-a ==2= b =2= c =2=d =2= h
- \---- f =0= g --------/
-  \=1= e =1=/
+a === b === c === d === f ==== g
+ \          h ===/            /
+  \-------------------- k =-1/
+   \------- i === j ===/
 #+END_EXAMPLE
-My guess is that the whole tail component is adjusted, by the amount of slack transfer.
-I have to think about it more. But now it's 4 o'clock at night, so I'll sleep over it.
+=k--g= has been marked with cut value =-1=.
+We do the same for the other edges:
+#+BEGIN_EXAMPLE
+a =3= b =3= c =3= d =3= f =3== g
+ \          h =1=/            /
+  \-------------------- k =-1/
+   \------- i =0= j =0=/
+#+END_EXAMPLE
+The =feasible-tree= algorithm ends here but the =network simplex= just started.
+#+BEGIN_SRC emacs-lisp
+  (defun rank ()
+    (feasible-tree)
+    (let (e)
+      (while (setq e (leave-edge))
+        (exchange e (enter-edge e))))
+    (normalize)
+    (balance))
+#+END_SRC
+It will replace the edges with negative cut values with
+non-tree edges to get only non negative cut values.
+The =leave-edge= described in the paper would be =k--g= because of the negative cut value.
+The =enter-edge= is one of the non-tree edges going from head to tail component with minimal slack.
+#+BEGIN_EXAMPLE
+Head:
+a === b === c === d === f === g
+            h ===/
+Tail:
+                        k
+            i === j ===/
 
-Good morning! Alright, so reading through the implementation details, we first should
-cut values of edges connecting to a leaf node. It's trivial because either head or tail component has
-only one node.
-#+BEGIN_EXAMPLE
-a -- b -- c -- d -- e
- \   f --/         /
-  \---------------/
+Non-Tree edges from head to tail:
+a
+ \--------------------- k
+  \-------- i === j ===/
 #+END_EXAMPLE
-So a leaf node is all nodes that have only 1 tight edge.
-They can have non-tree edges.
-If we cut the tight edge, either head or tail is only 1 node.
-In this case =a--b=, =d--e= and =f--c=.
-The cut value is calculated by looking at the edges connecting to the single node.
-If the node is the tail, out-going edges are signed positive, in-going ones are negative.
-If the node is the head, in-going edges are positive, out-going ones negative.
+So =a--i= and =a--k= are candidates for =enter-edges=. =a--i= has the smaller
+slack. So we exchange =a--i= and =k--g=.
+This will adjust the ranks of our tail tree:
 #+BEGIN_EXAMPLE
-cutvalue = (if tail + else -) out-going + (if tail - else +) in-going.
+a === b === c === d === f === g
+ \          h ===/           /
+  \-------------- k --------/
+   \= i === j ===/
 #+END_EXAMPLE
-So with =f--c=, =f= is a tail node. That means outgoing ones are positive, giving it the value
-of 1.
-Cutting =a--b= will render =a= as a tail node. It has 2 outgoing edges so the cut value is 2.
-When cutting =d--e=, e is a head node. This will make in going edges positive.
-Since there are 2, the cut value is 2 as well.
-
+The new cut values are:
+#+BEGIN_EXAMPLE
+a =2= b =2= c =2= d =2= f =2= g
+ \          h =1=/           /
+  \-------------- k --------/
+   \1 i =1= j =1=/
+#+END_EXAMPLE
+Because we only have positive cut values the all that is left is normalize and balancing.
 **** Optimization by using only local edges.
 The following part was a little bit confusing because it only showed the term
 for one example. It did not give any rules, how the term was constructed.
@@ -447,5 +498,7 @@ The paper suggests that when choosing an edge with negative-cut value, we should
 first but search cyclically through. Not sure what they exactly mean,
 but we could try just choosing one at random.
 
-Puh! I have a feeling without a nice graph traversal framework, it's gonna be a pain implementing this.
-In Part 3 we continue with =Vertex Ordering within Ranks=.
+Puh! I have a feeling without a nice graph framework, it's gonna be a pain implementing this.
+We need stuff like a data structure, postorder traversal and depth-first search.
+Those are still quite simple but since I'm starting from scratch it's still a lot of effort.
+In Part 3 we continue with some basic =graph implementations=.
